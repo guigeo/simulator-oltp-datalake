@@ -1,0 +1,13 @@
+.git
+.gitignore
+.github
+.vscode
+.idea
+*.md
+Makefile
+.env
+config/.env
+logs/
+__pycache__
+*.pyc
+*.pyo

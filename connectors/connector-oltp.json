@@ -1,0 +1,25 @@
+{
+  "name": "cdc-oltp",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "alimentador_postgres",
+    "database.port": "5432",
+    "database.user": "app",
+    "database.password": "app123",
+    "database.dbname": "teste_pacientes",
+    "database.server.name": "oltp_server",
+    "plugin.name": "pgoutput",
+
+    "slot.name": "slot_oltp",
+    "publication.name": "pub_oltp",
+
+    "table.include.list": 
+      "public.pacientes,public.medicos,public.consultas,public.exames,public.internacoes,public.convenios,public.pacientes_convenios",
+
+    "topic.prefix": "cdc",
+
+    "tombstones.on.delete": "false",
+
+    "snapshot.mode": "initial"
+  }
+}
