@@ -70,6 +70,9 @@ pip install -r requirements.txt
 # Configure (copy example and edit credentials)
 cp config/.env.example config/.env
 # Edit config/.env with your PostgreSQL connection
+
+# execute docker compose
+docker compose up -d
 ```
 
 ### 2. Initialize Database
