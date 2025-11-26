@@ -97,7 +97,7 @@ def seed(
 
 
 @app.command()
-def stream(interval: int = 2, batch_size: int = 50):
+def stream(interval: int = 10, batch_size: int = 50):
     """Inicia inserção contínua e realista de eventos."""
     logger.info(f"Iniciando stream (interval={interval}s, batch={batch_size})")
     
