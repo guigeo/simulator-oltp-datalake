@@ -73,6 +73,7 @@ cp config/.env.example config/.env
 
 # execute docker compose
 docker compose up -d
+
 ```
 
 ### 2. Initialize Database
@@ -94,7 +95,18 @@ make stream  # Continuous INSERT/UPDATE operations
 # In another terminal
 make counts  # Show record counts
 tail -f logs/app.log  # View live logs
+
 ```
+### 5. Debezium UI Kafka
+
+# create conector debezium
+curl -X POST http://localhost:8083/connectors \
+  -H "Content-Type: application/json" \
+  --data @/your path/connectors/connector-oltp.json
+
+# UI Kafka
+localhost:8088
+
 
 ### With Docker Compose
 
