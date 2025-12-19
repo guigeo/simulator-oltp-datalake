@@ -11,10 +11,26 @@ KAFKA_BROKER = os.getenv("KAFKA_BROKER", "alimentador_kafka:29092")
 PREFIXO_TOPICO = "oltp.public."
 BATCH_SIZE = int(os.getenv("BATCH_SIZE", "200"))
 
-S3_BUCKET = os.getenv("S3_BUCKET", "gbrj-simulator-oltp-datalake")
-S3_BASE_PREFIX = os.getenv("S3_BASE_PREFIX", "raw")
+S3_BUCKET = os.getenv("S3_BUCKET")
+if not S3_BUCKET:
+    raise RuntimeError(
+        "S3_BUCKET não definido. "
+        "Configure a variável de ambiente antes de iniciar o consumer."
+    )
 
-AWS_REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+S3_BASE_PREFIX = os.getenv("S3_BASE_PREFIX")
+if not S3_BASE_PREFIX:
+    raise RuntimeError(
+        "S3_BASE_PREFIX não definido. "
+        "Configure a região antes de iniciar o consumer."
+    )
+
+AWS_REGION = os.getenv("AWS_DEFAULT_REGION")
+if not AWS_REGION:
+    raise RuntimeError(
+        "AWS_DEFAULT_REGION não definido. "
+        "Configure a região antes de iniciar o consumer."
+    )
 
 # =========================
 # CLIENTE S3
