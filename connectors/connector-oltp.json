@@ -2,24 +2,36 @@
   "name": "cdc-oltp",
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "tasks.max": "1",
+
     "database.hostname": "alimentador_postgres",
     "database.port": "5432",
     "database.user": "app",
     "database.password": "app123",
     "database.dbname": "teste_pacientes",
+
     "database.server.name": "oltp_server",
+
     "plugin.name": "pgoutput",
 
     "slot.name": "slot_oltp",
-    "publication.name": "pub_oltp",
+    "publication.autocreate.mode": "filtered",
 
-    "table.include.list": 
-      "public.pacientes,public.medicos,public.consultas,public.exames,public.internacoes,public.convenios,public.pacientes_convenios",
+    "schema.include.list": "public",
 
-    "topic.prefix": "cdc",
+    "table.include.list": "public.pacientes|public.medicos|public.consultas|public.exames|public.internacoes|public.convenios|public.pacientes_convenios",
+
+    "snapshot.mode": "initial",
+    "provide.transaction.metadata": "true",
+
+    "topic.prefix": "oltp",
+
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter.schemas.enable": "false",
 
     "tombstones.on.delete": "false",
-
-    "snapshot.mode": "initial"
+    "decimal.handling.mode": "double"
   }
 }
