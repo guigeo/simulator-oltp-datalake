@@ -102,7 +102,8 @@ tail -f logs/app.log  # View live logs
 # create conector debezium
 curl -X POST http://localhost:8083/connectors \
   -H "Content-Type: application/json" \
-  --data @/your path/connectors/connector-oltp.json
+  --data @connectors/connector-oltp.json
+
 
 # UI Kafka
 localhost:8088
