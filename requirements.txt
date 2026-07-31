@@ -1,5 +1,6 @@
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 typer==0.12.3
+click>=8.1.0,<8.2.0
 faker==21.0.0
 pydantic==2.5.0

@@ -1,4 +1,3 @@
-import re
 import unittest
 from datetime import datetime
 
@@ -15,9 +14,10 @@ from scripts.data_gen import (
 
 class DataGenTests(unittest.TestCase):
     def test_document_formats(self):
-        self.assertRegex(generate_cpf(), r"^\d{3}\.\d{3}\.\d{3}-\d{2}$")
-        self.assertRegex(generate_cnpj(), r"^\d{2}\.\d{3}\.\d{3}/0001-\d{2}$")
-        self.assertRegex(generate_crm(), r"^\d{6}[A-Z]{2}$")
+        for _ in range(100):
+            self.assertRegex(generate_cpf(), r"^\d{3}\.\d{3}\.\d{3}-\d{2}$")
+            self.assertRegex(generate_cnpj(), r"^\d{2}\.\d{3}\.\d{3}/0001-\d{2}$")
+            self.assertRegex(generate_crm(), r"^\d{6}[A-Z]{2}$")
 
     def test_paciente_shape(self):
         paciente = generate_paciente()

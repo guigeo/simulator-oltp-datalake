@@ -13,15 +13,21 @@ from faker import Faker
 fake = Faker("pt_BR")
 
 
+def _mod11_digit(value: int) -> int:
+    """Normaliza dígito verificador mod 11 para um único algarismo."""
+    digit = 11 - (value % 11)
+    return 0 if digit >= 10 else digit
+
+
 def generate_cpf() -> str:
     """Gera um CPF formatado único (XXX.XXX.XXX-XX)."""
     cpf = [random.randint(0, 9) for _ in range(9)]
     
     s = sum((i + 2) * cpf[i] for i in range(8))
-    cpf.append((11 - (s % 11)) % 11)
+    cpf.append(_mod11_digit(s))
     
     s = sum((i + 1) * cpf[i] for i in range(9))
-    cpf.append((11 - (s % 11)) % 11)
+    cpf.append(_mod11_digit(s))
     
     return f"{cpf[0]}{cpf[1]}{cpf[2]}.{cpf[3]}{cpf[4]}{cpf[5]}.{cpf[6]}{cpf[7]}{cpf[8]}-{cpf[9]}{cpf[10]}"
 
@@ -39,10 +45,10 @@ def generate_cnpj() -> str:
     cnpj += [0, 0, 0, 1]
     
     s = sum((i % 8 + 2) * cnpj[i] for i in range(12))
-    cnpj.append((11 - (s % 11)) % 11)
+    cnpj.append(_mod11_digit(s))
     
     s = sum((i % 8 + 2) * cnpj[i] for i in range(13))
-    cnpj.append((11 - (s % 11)) % 11)
+    cnpj.append(_mod11_digit(s))
     
     return (
         f"{cnpj[0]}{cnpj[1]}.{cnpj[2]}{cnpj[3]}{cnpj[4]}.{cnpj[5]}{cnpj[6]}{cnpj[7]}/"
