@@ -290,6 +290,10 @@ make reset             # Drop + recreate + seed
 make counts            # Ver contagens
 make test              # Executar testes unitários
 make test-connection   # Testar conexão com PostgreSQL
+make docker-build      # Buildar imagem do simulador
+make docker-reset      # Reset via container do simulador
+make docker-stream-test # Stream curto via container
+make docker-test       # Testes via container
 make fmt               # Formatar código (ruff + black)
 make lint              # Verificar código (ruff)
 make clean             # Remover venv + __pycache__

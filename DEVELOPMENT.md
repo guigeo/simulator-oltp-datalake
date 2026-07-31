@@ -87,6 +87,19 @@ make stream
 .venv/bin/python -m scripts.cli stream --interval 1 --cycles 30
 ```
 
+### Docker App Workflow
+
+Use this when you want to validate the simulator inside its container instead of the host virtualenv:
+
+```bash
+make docker-build
+make docker-reset
+make docker-stream-test
+make docker-test
+```
+
+The Compose default still starts only PostgreSQL. The simulator service is opt-in and connects to Postgres through the Docker network.
+
 ### Code Quality
 
 ```bash

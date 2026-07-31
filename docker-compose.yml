@@ -21,6 +21,28 @@ services:
     networks:
       - alimentador_net
 
+  simulator:
+    build:
+      context: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - config/.env
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: app
+      PG_PASSWORD: app123
+      PG_DATABASE: teste_pacientes
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - alimentador_net
+    profiles:
+      - simulator
+    command: ["python", "-m", "scripts.cli", "stream"]
+
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: alimentador_pgadmin

@@ -1,5 +1,5 @@
 # Multi-stage build: smaller final image
-FROM python:3.11-slim as builder
+FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
@@ -32,6 +32,7 @@ COPY --from=builder /opt/venv /opt/venv
 COPY scripts/ ./scripts/
 COPY sql/ ./sql/
 COPY config/ ./config/
+COPY tests/ ./tests/
 COPY Makefile .
 
 # Create logs directory

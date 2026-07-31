@@ -1,4 +1,4 @@
-.PHONY: install up down ps logs init seed stream stream-test counts reset test test-connection fmt lint clean help
+.PHONY: install up down ps logs docker-build docker-init docker-reset docker-stream docker-stream-test docker-test init seed stream stream-test counts reset test test-connection fmt lint clean help
 
 PYTHON ?= python3
 VENV_PYTHON := .venv/bin/python
@@ -26,6 +26,13 @@ help:
 	@echo "  make stream           - Inicia inserção contínua"
 	@echo "  make stream-test      - Executa 5 ciclos de stream"
 	@echo ""
+	@echo "Docker App:"
+	@echo "  make docker-build     - Builda imagem do simulador"
+	@echo "  make docker-reset     - Recria e popula banco via container"
+	@echo "  make docker-stream    - Stream contínuo via container"
+	@echo "  make docker-stream-test - Executa 5 ciclos via container"
+	@echo "  make docker-test      - Executa testes via container"
+	@echo ""
 	@echo "Utilitários:"
 	@echo "  make fmt              - Formata código (ruff + black)"
 	@echo "  make lint             - Lint (ruff check)"
@@ -51,6 +58,24 @@ ps:
 
 logs:
 	docker compose logs -f postgres
+
+docker-build:
+	docker compose build simulator
+
+docker-init:
+	docker compose run --rm simulator python -m scripts.cli init-db-cmd
+
+docker-reset:
+	docker compose run --rm simulator python -m scripts.cli reset
+
+docker-stream:
+	docker compose run --rm simulator python -m scripts.cli stream
+
+docker-stream-test:
+	docker compose run --rm simulator python -m scripts.cli stream --interval 1 --cycles 5
+
+docker-test:
+	docker compose run --rm simulator python -m unittest discover -s tests -p 'test_*.py'
 
 # Inicialização
 init:

@@ -443,6 +443,24 @@ make seed
 make stream
 ```
 
+### Run Simulator In Docker
+
+```bash
+# Build application image
+make docker-build
+
+# Run database reset from the simulator container
+make docker-reset
+
+# Run a bounded stream smoke test from the simulator container
+make docker-stream-test
+
+# Run unit tests inside the simulator container
+make docker-test
+```
+
+The `simulator` service uses `config/.env`, but overrides `PG_HOST=postgres` inside Compose so the container connects through the Docker network.
+
 ### Build Image
 
 ```bash
