@@ -47,6 +47,9 @@ services:
       - "2181:2181"
     networks:
       - alimentador_net
+    profiles:
+      - cdc
+      - lake
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -70,6 +73,9 @@ services:
       - "9092:9092"
     networks:
       - alimentador_net
+    profiles:
+      - cdc
+      - lake
 
   connect:
     image: debezium/connect:2.7.0.Final
@@ -93,6 +99,9 @@ services:
       VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
     networks:
       - alimentador_net
+    profiles:
+      - cdc
+      - lake
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -106,6 +115,10 @@ services:
     networks:
       - alimentador_net
     restart: unless-stopped
+    profiles:
+      - cdc
+      - debug
+      - lake
 
   consumer_universal:
     build:
@@ -114,7 +127,7 @@ services:
     depends_on:
       - kafka
     env_file:
-      - .env
+      - config/.env
     environment:
       KAFKA_BROKER: alimentador_kafka:29092
       S3_BUCKET: gbrj-simulator-oltp-datalake
@@ -122,6 +135,8 @@ services:
     networks:
       - alimentador_net
     restart: unless-stopped
+    profiles:
+      - lake
 
 
 volumes:

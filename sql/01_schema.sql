@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS pacientes (
   updated_at    TIMESTAMP NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS pacientes_updated_at ON pacientes;
 CREATE TRIGGER pacientes_updated_at
 BEFORE UPDATE ON pacientes
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS medicos (
   updated_at    TIMESTAMP NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS medicos_updated_at ON medicos;
 CREATE TRIGGER medicos_updated_at
 BEFORE UPDATE ON medicos
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -48,6 +50,7 @@ CREATE TABLE IF NOT EXISTS convenios (
   updated_at TIMESTAMP NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS convenios_updated_at ON convenios;
 CREATE TRIGGER convenios_updated_at
 BEFORE UPDATE ON convenios
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -66,6 +69,7 @@ CREATE TABLE IF NOT EXISTS pacientes_convenios (
   UNIQUE (paciente_id, convenio_id)
 );
 
+DROP TRIGGER IF EXISTS pacientes_convenios_updated_at ON pacientes_convenios;
 CREATE TRIGGER pacientes_convenios_updated_at
 BEFORE UPDATE ON pacientes_convenios
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -84,6 +88,7 @@ CREATE TABLE IF NOT EXISTS consultas (
   updated_at  TIMESTAMP NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS consultas_updated_at ON consultas;
 CREATE TRIGGER consultas_updated_at
 BEFORE UPDATE ON consultas
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -100,6 +105,7 @@ CREATE TABLE IF NOT EXISTS exames (
   updated_at   TIMESTAMP NOT NULL DEFAULT now()
 );
 
+DROP TRIGGER IF EXISTS exames_updated_at ON exames;
 CREATE TRIGGER exames_updated_at
 BEFORE UPDATE ON exames
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -118,6 +124,7 @@ CREATE TABLE IF NOT EXISTS internacoes (
   CHECK (data_saida IS NULL OR data_saida >= data_entrada)
 );
 
+DROP TRIGGER IF EXISTS internacoes_updated_at ON internacoes;
 CREATE TRIGGER internacoes_updated_at
 BEFORE UPDATE ON internacoes
 FOR EACH ROW EXECUTE FUNCTION set_updated_at();

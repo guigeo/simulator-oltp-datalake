@@ -1,4 +1,7 @@
-.PHONY: install init seed stream counts reset fmt lint clean help
+.PHONY: install up down ps logs init seed stream stream-test counts reset test test-connection fmt lint clean help
+
+PYTHON ?= python3
+VENV_PYTHON := .venv/bin/python
 
 # Default target
 help:
@@ -8,13 +11,20 @@ help:
 	@echo "  make install          - Cria venv e instala dependências"
 	@echo ""
 	@echo "Banco de Dados:"
+	@echo "  make up               - Sobe PostgreSQL local"
+	@echo "  make down             - Para serviços Docker"
+	@echo "  make ps               - Lista serviços Docker"
+	@echo "  make logs             - Acompanha logs do PostgreSQL"
 	@echo "  make init             - Inicializa schema, índices e lookups"
 	@echo "  make seed             - Popula dados iniciais (≥1000 por tabela)"
 	@echo "  make reset            - Drop + Recreate + Seed (cuidado!)"
 	@echo "  make counts           - Exibe contagem de registros por tabela"
+	@echo "  make test-connection  - Testa conexão com PostgreSQL"
+	@echo "  make test             - Executa testes unitários"
 	@echo ""
 	@echo "Streaming:"
 	@echo "  make stream           - Inicia inserção contínua"
+	@echo "  make stream-test      - Executa 5 ciclos de stream"
 	@echo ""
 	@echo "Utilitários:"
 	@echo "  make fmt              - Formata código (ruff + black)"
@@ -24,28 +34,49 @@ help:
 
 # Instalação
 install:
-	python -m venv .venv && \
+	$(PYTHON) -m venv .venv && \
 	. .venv/bin/activate && \
 	pip install --upgrade pip && \
 	pip install -r requirements.txt
 	@echo "✓ Ambiente virtual criado e dependências instaladas."
 
+up:
+	docker compose up -d postgres
+
+down:
+	docker compose down
+
+ps:
+	docker compose ps
+
+logs:
+	docker compose logs -f postgres
+
 # Inicialização
 init:
-	@. .venv/bin/activate && python -m scripts.cli init-db-cmd
+	@$(VENV_PYTHON) -m scripts.cli init-db-cmd
 
 seed:
-	@. .venv/bin/activate && python -m scripts.cli seed
+	@$(VENV_PYTHON) -m scripts.cli seed
 
 reset:
-	@. .venv/bin/activate && python -m scripts.cli reset
+	@$(VENV_PYTHON) -m scripts.cli reset
 
 counts:
-	@. .venv/bin/activate && python -m scripts.cli counts
+	@$(VENV_PYTHON) -m scripts.cli counts
 
 # Stream
 stream:
-	@. .venv/bin/activate && python -m scripts.cli stream
+	@$(VENV_PYTHON) -m scripts.cli stream
+
+stream-test:
+	@$(VENV_PYTHON) -m scripts.cli stream --interval 1 --cycles 5
+
+test-connection:
+	@$(VENV_PYTHON) test_connection.py
+
+test:
+	@$(VENV_PYTHON) -m unittest discover -s tests -p 'test_*.py'
 
 # Code quality
 fmt:

@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-from dotenv import load_dotenv
 
 from scripts.db_init import (
     load_env,
@@ -15,6 +14,7 @@ from scripts.db_init import (
     test_connection,
     init_db,
     get_table_counts,
+    load_project_env,
 )
 from scripts.seed import main as seed_main
 from scripts.stream import main as stream_main
@@ -43,7 +43,7 @@ def init_db_cmd():
     """Inicializa o banco de dados (schema, índices, lookups)."""
     logger.info("Inicializando banco de dados...")
     
-    load_dotenv()
+    load_project_env()
     env_vars = load_env()
     
     conn = create_connection(env_vars)
@@ -71,7 +71,7 @@ def seed(
     """Popula o banco com volume inicial de dados."""
     logger.info("Iniciando seed de dados...")
     
-    load_dotenv()
+    load_project_env()
     
     if volume and volume > 1:
         logger.info(f"Usando multiplicador de volume: {volume}x")
@@ -97,14 +97,24 @@ def seed(
 
 
 @app.command()
-def stream(interval: int = 10, batch_size: int = 50):
+def stream(
+    interval: Optional[int] = None,
+    batch_size: Optional[int] = None,
+    cycles: Optional[int] = typer.Option(
+        None,
+        min=1,
+        help="Número máximo de ciclos antes de encerrar.",
+    ),
+):
     """Inicia inserção contínua e realista de eventos."""
-    logger.info(f"Iniciando stream (interval={interval}s, batch={batch_size})")
+    logger.info(
+        f"Iniciando stream (interval={interval}, batch={batch_size}, cycles={cycles})"
+    )
     
-    load_dotenv()
+    load_project_env()
     
     try:
-        stream_main(interval=interval, batch_size=batch_size)
+        stream_main(interval=interval, batch_size=batch_size, cycles=cycles)
         typer.echo("✓ Stream encerrado com sucesso!")
     except Exception as e:
         logger.error(f"Erro ao executar stream: {e}")
@@ -116,7 +126,7 @@ def reset():
     """Reset total: drop + recreate + seed."""
     logger.info("Executando reset total...")
     
-    load_dotenv()
+    load_project_env()
     
     try:
         reset_main()
@@ -131,7 +141,7 @@ def counts():
     """Exibe contagem de registros por tabela."""
     logger.info("Buscando contagens...")
     
-    load_dotenv()
+    load_project_env()
     env_vars = load_env()
     
     conn = create_connection(env_vars)

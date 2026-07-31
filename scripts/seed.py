@@ -5,11 +5,8 @@ Seed: popula o banco com volume inicial de dados.
 import logging
 import os
 from datetime import datetime
-from typing import Dict, List, Any
-
 import psycopg2
 from psycopg2.extras import execute_values
-from dotenv import load_dotenv
 
 from scripts.data_gen import (
     generate_paciente,
@@ -19,7 +16,12 @@ from scripts.data_gen import (
     generate_exame,
     generate_internacao,
 )
-from scripts.db_init import load_env, create_connection, test_connection
+from scripts.db_init import (
+    load_env,
+    create_connection,
+    test_connection,
+    load_project_env,
+)
 from scripts.validators import Validators
 
 logger = logging.getLogger(__name__)
@@ -27,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 def load_config() -> dict:
     """Carrega configurações do .env."""
-    load_dotenv()
+    load_project_env()
     return {
         "seed_pacientes": int(os.getenv("SEED_PACIENTES", 2000)),
         "seed_medicos": int(os.getenv("SEED_MEDICOS", 200)),
@@ -236,9 +238,35 @@ def seed_pacientes_convenios(
     total_inserted = 0
     batch = []
     validators = Validators(conn)
+    max_attempts = max(count * 10, batch_size)
+    attempts = 0
+
+    def flush_batch() -> int:
+        nonlocal batch
+        if not batch:
+            return 0
+
+        with conn.cursor() as cur:
+            inserted_rows = execute_values(
+                cur,
+                """
+                INSERT INTO pacientes_convenios
+                (paciente_id, convenio_id, numero_carteira, validade)
+                VALUES %s
+                ON CONFLICT DO NOTHING
+                RETURNING id
+                """,
+                batch,
+                fetch=True,
+            )
+        conn.commit()
+        inserted = len(inserted_rows)
+        batch = []
+        return inserted
     
     try:
-        for _ in range(count):
+        while total_inserted < count and attempts < max_attempts:
+            attempts += 1
             paciente_id = validators.get_random_paciente_id()
             convenio_id = validators.get_random_convenio_id()
             
@@ -252,42 +280,26 @@ def seed_pacientes_convenios(
                     )
                 )
             
-            if len(batch) >= batch_size:
-                with conn.cursor() as cur:
-                    execute_values(
-                        cur,
-                        """
-                        INSERT INTO pacientes_convenios
-                        (paciente_id, convenio_id, numero_carteira, validade)
-                        VALUES %s
-                        ON CONFLICT DO NOTHING
-                        """,
-                        batch,
-                    )
-                conn.commit()
-                total_inserted += len(batch)
+            if len(batch) >= batch_size or total_inserted + len(batch) >= count:
+                inserted = flush_batch()
+                total_inserted += inserted
                 logger.info(
-                    f"Pacientes_Convênios: +{len(batch)} (total={total_inserted})"
+                    f"Pacientes_Convênios: +{inserted} (total={total_inserted})"
                 )
-                batch = []
         
-        # Último batch
         if batch:
-            with conn.cursor() as cur:
-                execute_values(
-                    cur,
-                    """
-                    INSERT INTO pacientes_convenios
-                    (paciente_id, convenio_id, numero_carteira, validade)
-                    VALUES %s
-                    ON CONFLICT DO NOTHING
-                    """,
-                    batch,
-                )
-            conn.commit()
-            total_inserted += len(batch)
+            inserted = flush_batch()
+            total_inserted += inserted
             logger.info(
-                f"Pacientes_Convênios: +{len(batch)} (total={total_inserted})"
+                f"Pacientes_Convênios: +{inserted} (total={total_inserted})"
+            )
+
+        if total_inserted < count:
+            logger.warning(
+                "Seed de pacientes_convenios inseriu %s/%s após %s tentativas.",
+                total_inserted,
+                count,
+                attempts,
             )
     except psycopg2.Error as e:
         logger.error(f"Erro ao seed de pacientes_convenios: {e}")

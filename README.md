@@ -1,4 +1,4 @@
-# 🏥 Alimentador-BD
+# Alimentador-BD
 
 **OLTP Hospital Simulator** — Continuous data streaming for CDC testing with Debezium or another CDC ingestion engine.
 
@@ -46,14 +46,13 @@ Alimentador-BD is a production-ready Python simulator that generates **realistic
 
 ---
 
-## 🚀 Quick Start
+## Quick Start Local
 
 ### Prerequisites
 - Python 3.11+
-- PostgreSQL 14+
-- Docker & Docker Compose (optional)
+- Docker & Docker Compose
 
-### 1. Setup (5 minutes)
+### 1. Setup
 
 ```bash
 # Clone repository
@@ -61,66 +60,67 @@ git clone https://github.com:Hycky/oltp-simulator.git
 cd alimentador-bd
 
 # Create virtual environment
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Configure (copy example and edit credentials)
+# Configure local environment
 cp config/.env.example config/.env
-# Edit config/.env with your PostgreSQL connection
-
-# execute docker compose
-docker compose up -d
-
 ```
 
-### 2. Initialize Database
+`config/.env` is the application configuration file. The root `.env`, when present, is not used by the Python application and should not be used for local simulator config.
+
+### 2. Start PostgreSQL
 
 ```bash
-make init    # Create schema and indexes
-make seed    # Populate ~13k initial records
+make up
+make test-connection
 ```
 
-### 3. Start Streaming
+By default, `docker compose` starts only PostgreSQL. Kafka, Debezium and the raw consumer are opt-in profiles.
+
+### 3. Initialize Database
 
 ```bash
-make stream  # Continuous INSERT/UPDATE operations
+make init     # Create schema, triggers, indexes and lookup data
+make seed     # Populate ~13k initial records
+make counts   # Show record counts
 ```
 
-### 4. Monitor
+For a clean local database:
 
 ```bash
-# In another terminal
-make counts  # Show record counts
-tail -f logs/app.log  # View live logs
-
+make reset
 ```
-### 5. Debezium UI Kafka
 
-# create conector debezium
+### 4. Start Streaming
+
+```bash
+make stream       # Continuous INSERT/UPDATE operations
+make stream-test  # 5-cycle smoke test, exits automatically
+```
+
+### 5. Run Tests
+
+```bash
+make test
+```
+
+### 6. Optional CDC Stack
+
+```bash
+# Start PostgreSQL + Kafka + Kafka Connect + Kafka UI
+docker compose --profile cdc up -d
+
+# Create Debezium connector
 curl -X POST http://localhost:8083/connectors \
   -H "Content-Type: application/json" \
   --data @connectors/connector-oltp.json
 
-
-# UI Kafka
-localhost:8088
-
-
-### With Docker Compose
-
-```bash
-# Start PostgreSQL + PgAdmin
-docker-compose up -d postgres
-
-# From host machine, initialize
-make init
-make seed
-
-# Stream
-make stream
+# Kafka UI
+# http://localhost:8088
 ```
 
 ---
@@ -130,11 +130,18 @@ make stream
 | Command | Description |
 |---------|-------------|
 | `make install` | Create venv and install dependencies |
+| `make up` | Start local PostgreSQL only |
+| `make down` | Stop Docker Compose services |
+| `make ps` | Show Docker Compose services |
+| `make logs` | Follow PostgreSQL logs |
 | `make init` | Create schema, indexes, lookup data |
 | `make seed` | Populate ~13k initial records |
 | `make stream` | Start continuous streaming |
+| `make stream-test` | Run 5 stream cycles and exit |
 | `make reset` | Drop + recreate + seed all |
 | `make counts` | Display table record counts |
+| `make test` | Run unit tests with unittest |
+| `make test-connection` | Validate PostgreSQL connection |
 | `make fmt` | Format code with Black |
 | `make lint` | Check code with Ruff |
 | `make clean` | Remove cache and temp files |
@@ -194,14 +201,14 @@ internacoes (1,200+)
 
 ## ⚙️ Configuration
 
-### Environment Variables (`.env`)
+### Environment Variables (`config/.env`)
 
 ```env
 # PostgreSQL Connection
 PG_HOST=localhost
 PG_PORT=5432
-PG_USER=postgres
-PG_PASSWORD=postgres
+PG_USER=app
+PG_PASSWORD=app123
 PG_DATABASE=teste_pacientes
 
 # Streaming Configuration
@@ -286,11 +293,20 @@ SELECT COUNT(*) FROM consultas
 WHERE created_at > now();
 ```
 
+### Automated Tests
+
+```bash
+make test
+make stream-test
+```
+
+`make test` uses Python's standard `unittest` runner, so it works with the base runtime dependencies. The first tests cover data generation, configuration loading and bounded stream execution.
+
 ### Monitor Growth
 
 ```bash
-# Terminal 1 - Stream for 5 minutes
-timeout 300 make stream
+# Terminal 1 - Stream continuously
+make stream
 
 # Terminal 2 - Check growth every 10 seconds
 while true; do make counts; sleep 10; done
@@ -299,10 +315,11 @@ while true; do make counts; sleep 10; done
 ### Performance Testing
 
 ```bash
-# Stress test: high throughput
-STREAM_INTERVAL_SECONDS=0 timeout 60 make stream
+# Smoke test: 5 cycles
+make stream-test
 
-# Measure: ~200 ops/minute
+# Custom short run
+.venv/bin/python -m scripts.cli stream --interval 1 --cycles 30
 ```
 
 ---
@@ -318,8 +335,8 @@ Alimentador-BD generates **CDC-compatible changes** for Debezium capture.
   "name": "postgres-connector",
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-    "database.hostname": "10.42.88.67",
-    "database.port": 5441,
+    "database.hostname": "alimentador_postgres",
+    "database.port": 5432,
     "database.user": "app",
     "database.password": "app123",
     "database.dbname": "teste_pacientes",
@@ -393,6 +410,7 @@ alimentador_bd/
 │   ├── 03_seed-lookups.sql  # Initial data
 │   └── 99_drop_all.sql      # Cleanup
 ├── logs/                     # Runtime logs
+├── tests/                    # Unit tests
 ├── Makefile                  # Build automation
 ├── Dockerfile                # Container image
 ├── docker-compose.yml        # Local stack
@@ -415,7 +433,7 @@ alimentador_bd/
 
 ```bash
 # Start PostgreSQL (Docker)
-docker-compose up -d postgres
+make up
 
 # Initialize from host
 make init
@@ -472,7 +490,8 @@ See **[DEPLOYMENT.md](DEPLOYMENT.md)** for detailed guides:
 
 ```bash
 # Check PostgreSQL is running
-psql -U postgres -h localhost -c "SELECT 1"
+make up
+make test-connection
 
 # Verify credentials in config/.env
 cat config/.env | grep PG_
@@ -524,10 +543,13 @@ Quick start for contributors:
 ```bash
 git clone https://github.com/yourusername/alimentador-bd.git
 cd alimentador-bd
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-make init && make seed
-make stream  # Test it works
+cp config/.env.example config/.env
+make up
+make reset
+make test
+make stream-test
 ```
 
 ---
@@ -536,13 +558,13 @@ make stream  # Test it works
 
 | Metric | Value |
 |--------|-------|
-| Seed time | <2 seconds |
-| Initial records | ~13,000 |
+| Seed time | ~2-5 seconds locally |
+| Initial records | ~13,300 |
 | Stream rate | 1 op / 2s |
 | Batch size | 50 records |
 | Insert ops | 70% |
 | Update ops | 30% |
-| Throughput | 200+ ops/min |
+| Default throughput | ~30 ops/min |
 | Memory usage | ~256 MB |
 | CPU usage | Low (<1 core) |
 

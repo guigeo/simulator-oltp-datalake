@@ -5,7 +5,7 @@ This guide is for developers who want to contribute to the project or set up a l
 ## Prerequisites
 
 - Python 3.11+
-- PostgreSQL 14+
+- Docker & Docker Compose
 - Git
 - Make
 
@@ -21,7 +21,7 @@ cd alimentador-bd
 ### 2. Create Virtual Environment
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 ```
 
@@ -39,13 +39,24 @@ pip install -r requirements.txt
 cp config/.env.example config/.env
 ```
 
-Edit `config/.env` with your PostgreSQL credentials.
+For local Docker, the defaults in `config/.env.example` are enough:
 
-### 5. Initialize Database
+```env
+PG_HOST=localhost
+PG_PORT=5432
+PG_USER=app
+PG_PASSWORD=app123
+PG_DATABASE=teste_pacientes
+```
+
+`config/.env` is the official app config file. Avoid using a root `.env` for simulator settings.
+
+### 5. Start PostgreSQL and Initialize Database
 
 ```bash
-make init
-make seed
+make up
+make test-connection
+make reset
 ```
 
 ## Development Workflow
@@ -53,8 +64,11 @@ make seed
 ### Running Tests
 
 ```bash
-# Validate connection
-python scripts/test_connection.py
+# Unit tests
+make test
+
+# Validate database connection
+make test-connection
 
 # Check table counts
 make counts
@@ -63,11 +77,14 @@ make counts
 ### Starting Stream
 
 ```bash
-# 30 seconds
-timeout 30 make stream
+# 5-cycle smoke test
+make stream-test
 
-# Custom interval
-STREAM_INTERVAL_SECONDS=1 timeout 60 make stream
+# Continuous stream
+make stream
+
+# Custom bounded run
+.venv/bin/python -m scripts.cli stream --interval 1 --cycles 30
 ```
 
 ### Code Quality
@@ -89,6 +106,7 @@ make clean
 scripts/          # Python modules
 sql/              # SQL scripts
 config/           # Configuration
+tests/            # Unit tests
 Makefile          # Build targets
 requirements.txt  # Dependencies
 ```
@@ -102,14 +120,12 @@ requirements.txt  # Dependencies
 
 ## Adding Features
 
-See [ROADMAP.md](ROADMAP.md) for planned features.
-
 ### Process
 
 1. Fork repository
 2. Create feature branch: `git checkout -b feature/my-feature`
 3. Make changes following code style
-4. Test thoroughly: `make lint && make test`
+4. Test thoroughly: `make test && make stream-test`
 5. Commit with clear message
 6. Push and create Pull Request
 
@@ -137,7 +153,8 @@ psql -U app -h localhost -d teste_pacientes
 Check PostgreSQL is running and credentials are correct:
 
 ```bash
-psql -U app -h 10.42.88.67 -d teste_pacientes -c "SELECT 1"
+make up
+make test-connection
 ```
 
 ### "Stream stops after few events"
@@ -161,4 +178,3 @@ Expected: ~2-5 seconds for 13k records.
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Technical design
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
-- [ROADMAP.md](ROADMAP.md) - Future features

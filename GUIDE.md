@@ -71,16 +71,16 @@ alimentador_bd/
 
 ### Essencial
 - **Python 3.11+** instalado
-- **PostgreSQL 14+** rodando em `10.42.88.67:5441`
-- **Credenciais**: usuário `app` / senha `app123` / banco `postgres`
+- **Docker & Docker Compose**
+- **PostgreSQL local via Docker** com usuário `app`, senha `app123` e banco `teste_pacientes`
 
 ### Verificar Pré-requisitos
 ```bash
 # Python
 python --version
 
-# PostgreSQL (se remoto)
-telnet 10.42.88.67 5441  # Ctrl+] then quit (ou Ctrl+C)
+# Docker
+docker compose version
 ```
 
 ---
@@ -97,22 +97,19 @@ cd /home/henrique.ferreira/workspace/alimentador_bd
 cp config/.env.example config/.env
 ```
 
-**Verificar que `.env` contém:**
+**Verificar que `config/.env` contém:**
 ```env
-PG_HOST=10.42.88.67
-PG_PORT=5441
+PG_HOST=localhost
+PG_PORT=5432
 PG_USER=app
 PG_PASSWORD=app123
-PG_DATABASE=postgres
+PG_DATABASE=teste_pacientes
 ```
 
-### 3️⃣ Testar Conexão
+### 3️⃣ Subir PostgreSQL Local e Testar Conexão
 ```bash
-# Instalar dependências mínimas
-pip install python-dotenv psycopg2-binary
-
-# Executar teste
-python test_connection.py
+make up
+make test-connection
 ```
 
 **Saída esperada:**
@@ -162,6 +159,19 @@ make init
 
 ---
 
+### 📍 Opção Rápida: Reset Completo
+
+Para desenvolvimento local, o caminho mais simples é recriar tudo e popular os dados:
+
+```bash
+make reset
+make counts
+```
+
+Isso executa drop, schema, índices, lookups e seed completo.
+
+---
+
 ### 📍 Passo 2: Popular com Dados Iniciais
 
 Popula ~13.000 registros nas 7 tabelas usando Faker pt_BR.
@@ -188,12 +198,12 @@ Internações: +50 (total=1200)
 |--------|-----------|
 | pacientes | 2.000 |
 | medicos | 200 |
-| convenios | 12 |
-| pacientes_convenios | ~2.500 |
+| convenios | 14 (2 lookups + 12 gerados) |
+| pacientes_convenios | 2.500 |
 | consultas | 4.000 |
 | exames | 3.500 |
 | internacoes | 1.200 |
-| **TOTAL** | **~13.000** |
+| **TOTAL** | **~13.400** |
 
 ---
 
@@ -275,8 +285,11 @@ Confirmará antes de executar. Depois recria schema e popula novamente.
 make init              # Criar schema + índices + lookups
 make seed              # Popular dados iniciais (~13.000)
 make stream            # Inserção contínua
+make stream-test       # Executar 5 ciclos e encerrar
 make reset             # Drop + recreate + seed
 make counts            # Ver contagens
+make test              # Executar testes unitários
+make test-connection   # Testar conexão com PostgreSQL
 make fmt               # Formatar código (ruff + black)
 make lint              # Verificar código (ruff)
 make clean             # Remover venv + __pycache__
@@ -292,12 +305,12 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 # Comandos
 python -m scripts.cli init-db-cmd
 python -m scripts.cli seed [--volume 2]
-python -m scripts.cli stream [--interval 2] [--batch-size 50]
+python -m scripts.cli stream [--interval 2] [--batch-size 50] [--cycles 30]
 python -m scripts.cli reset
 python -m scripts.cli counts
 
 # Teste de conexão
-python test_connection.py
+make test-connection
 ```
 
 ---
@@ -397,27 +410,25 @@ INFO ... Stream ciclo 50: consultas: 27 | exames: 12 | internacoes: 7 | paciente
 
 **Verificar:**
 ```bash
-# Testar IP/porta
-ping 10.42.88.67
-telnet 10.42.88.67 5441
+# Subir PostgreSQL local
+make up
 
-# Ou via Python
-python test_connection.py
-
-# Manualmente com psql
-psql -h 10.42.88.67 -p 5441 -U app -d postgres -c "SELECT 1"
+# Testar conexão
+make test-connection
 ```
 
 ---
 
 ### ❌ Erro: "Database não existe"
 
-**Problema:** `database "postgres" does not exist`
+**Problema:** `database "teste_pacientes" does not exist`
 
 **Solução:**
 ```bash
-# Criar banco (se for necessário)
-createdb -U app -h 10.42.88.67 -p 5441 postgres
+# Recriar ambiente local
+make down
+make up
+make reset
 
 # Ou mudar em config/.env para outro banco existente
 PG_DATABASE=seu_banco_existente
@@ -462,8 +473,8 @@ grep "CPF duplicado\|IntegrityError" logs/*.log
 
 **Verificar:**
 1. Logs: `tail -f logs/app.log`
-2. Conexão: `python test_connection.py`
-3. Dados: `python -m scripts.cli counts`
+2. Conexão: `make test-connection`
+3. Dados: `make counts`
 4. Reseedie se vazio: `make seed`
 
 ---
@@ -480,8 +491,8 @@ STREAM_INTERVAL_SECONDS=0.5
 # 2. Aumentar batch
 BATCH_SIZE=100
 
-# 3. Otimizar índices
-psql -h 10.42.88.67 -p 5441 -U app -d postgres -f sql/02_indexes.sql
+# 3. Reaplicar índices idempotentes
+make init
 ```
 
 ---
@@ -586,11 +597,11 @@ pydantic==2.5.0             (validação)
 
 ```env
 # Conexão
-PG_HOST=10.42.88.67
-PG_PORT=5441
+PG_HOST=localhost
+PG_PORT=5432
 PG_USER=app
 PG_PASSWORD=app123
-PG_DATABASE=postgres
+PG_DATABASE=teste_pacientes
 
 # Stream
 STREAM_INTERVAL_SECONDS=2        (intervalo em segundos)
@@ -660,10 +671,10 @@ Invalida automaticamente após cada INSERT de novo paciente/médico/convênio.
 
 ```bash
 # Testar conexão
-python test_connection.py
+make test-connection
 
 # Ver contagens
-python -m scripts.cli counts
+make counts
 
 # Limpar venv
 make clean
@@ -712,8 +723,9 @@ make help
 ```env
 PG_HOST=localhost
 PG_PORT=5432
-PG_USER=postgres
-PG_PASSWORD=postgres
+PG_USER=app
+PG_PASSWORD=app123
+PG_DATABASE=teste_pacientes
 ```
 
 ---
@@ -723,7 +735,7 @@ PG_PASSWORD=postgres
 - **Código:** Todos os 29 arquivos prontos para usar
 - **Documentação:** Este guia + AGENTS.md (especificação)
 - **Logs:** Verifique `/logs` para diagnóstico
-- **Teste:** Use `python test_connection.py` para validar
+- **Teste:** Use `make test-connection` para validar
 
 ---
 

@@ -12,10 +12,18 @@ from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
 
+PROJECT_ROOT = Path(__file__).parent.parent
+ENV_FILE = PROJECT_ROOT / "config" / ".env"
+
+
+def load_project_env() -> None:
+    """Carrega config/.env sem sobrescrever variáveis já exportadas."""
+    load_dotenv(ENV_FILE, override=False)
+
 
 def load_env() -> dict:
     """Carrega variáveis de ambiente."""
-    load_dotenv(Path(__file__).parent.parent / "config" / ".env")
+    load_project_env()
     return {
         "host": os.getenv("PG_HOST", "localhost"),
         "port": int(os.getenv("PG_PORT", 5432)),

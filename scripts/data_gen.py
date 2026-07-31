@@ -6,7 +6,7 @@ Locale pt_BR, com funções para gerar pacientes, médicos, convênios, etc.
 import random
 import string
 from datetime import datetime, timedelta
-from typing import Dict, Any, Set
+from typing import Dict, Any
 
 from faker import Faker
 
@@ -52,7 +52,6 @@ def generate_cnpj() -> str:
 
 def generate_paciente() -> Dict[str, Any]:
     """Gera dados de um paciente."""
-    hoje = datetime.now().date()
     nascimento = fake.date_of_birth(minimum_age=18, maximum_age=100)
     
     return {

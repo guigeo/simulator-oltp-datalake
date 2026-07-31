@@ -17,7 +17,11 @@ source .venv/bin/activate  # Linux/Mac
 
 # Dependências
 pip install -r requirements.txt
-pip install -e .
+
+# Config local
+cp config/.env.example config/.env
+make up
+make reset
 ```
 
 ## Code Style
@@ -37,9 +41,16 @@ make lint
 ## Testing
 
 ```bash
-make init
-make seed
-timeout 60 make stream
+make test
+make test-connection
+make stream-test
+make counts
+```
+
+Para validar um banco limpo local:
+
+```bash
+make reset
 make counts
 ```
 

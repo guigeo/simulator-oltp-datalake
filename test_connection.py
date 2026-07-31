@@ -11,7 +11,7 @@ from pathlib import Path
 # Carregar .env
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).parent / "config" / ".env")
+load_dotenv(Path(__file__).parent / "config" / ".env", override=False)
 
 import psycopg2
 

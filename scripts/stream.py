@@ -8,10 +8,9 @@ import os
 import random
 import signal
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import psycopg2
-from dotenv import load_dotenv
 
 from scripts.data_gen import (
     generate_paciente,
@@ -19,7 +18,12 @@ from scripts.data_gen import (
     generate_exame,
     generate_internacao,
 )
-from scripts.db_init import load_env, create_connection, test_connection
+from scripts.db_init import (
+    load_env,
+    create_connection,
+    test_connection,
+    load_project_env,
+)
 from scripts.validators import Validators
 
 logger = logging.getLogger(__name__)
@@ -36,7 +40,7 @@ def handle_signal(signum, frame):
 
 def load_config() -> dict:
     """Carrega configurações do .env."""
-    load_dotenv()
+    load_project_env()
     return {
         "interval": int(os.getenv("STREAM_INTERVAL_SECONDS", 2)),
         "batch_size": int(os.getenv("BATCH_SIZE", 50)),
@@ -254,15 +258,23 @@ def update_internacao(conn: psycopg2.extensions.connection) -> bool:
     """Marca alta de internação."""
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id FROM internacoes WHERE data_saida IS NULL ORDER BY RANDOM() LIMIT 1")
+        cur.execute(
+            """
+            SELECT id, data_entrada
+            FROM internacoes
+            WHERE data_saida IS NULL
+            ORDER BY RANDOM()
+            LIMIT 1
+            """
+        )
         result = cur.fetchone()
         
         if not result:
             cur.close()
             return False
         
-        internacao_id = result[0]
-        data_saida = datetime.now() - timedelta(days=random.randint(1, 10))
+        internacao_id, data_entrada = result
+        data_saida = data_entrada + timedelta(days=random.randint(1, 10))
         
         cur.execute("UPDATE internacoes SET data_saida = %s WHERE id = %s", (data_saida, internacao_id))
         cur.close()
@@ -273,9 +285,15 @@ def update_internacao(conn: psycopg2.extensions.connection) -> bool:
         return False
 
 
-def stream_loop(conn: psycopg2.extensions.connection, interval: int, max_jitter_ms: int):
+def stream_loop(
+    conn: psycopg2.extensions.connection,
+    interval: int,
+    max_jitter_ms: int,
+    cycles: int = None,
+):
     """Loop principal de stream contínuo com INSERT e UPDATE."""
     global should_stop
+    should_stop = False
     
     validators = Validators(conn)
     counters = {
@@ -297,6 +315,8 @@ def stream_loop(conn: psycopg2.extensions.connection, interval: int, max_jitter_
     
     logger.info(f"Iniciando stream com intervalo {interval}s e jitter até {max_jitter_ms}ms")
     logger.info("Modelo realista: INSERT (70%) e UPDATE (30%)")
+    if cycles:
+        logger.info(f"Stream encerrará automaticamente após {cycles} ciclos")
     
     cycle = 0
     while not should_stop:
@@ -306,24 +326,26 @@ def stream_loop(conn: psycopg2.extensions.connection, interval: int, max_jitter_
             
             event = random.choices(events, weights=weights)[0]
             
+            success = False
             if event == "insert_paciente":
-                insert_paciente(conn, validators)
+                success = insert_paciente(conn, validators)
             elif event == "insert_consulta":
-                insert_consulta(conn, validators)
+                success = insert_consulta(conn, validators)
             elif event == "insert_exame":
-                insert_exame(conn, validators)
+                success = insert_exame(conn, validators)
             elif event == "insert_internacao":
-                insert_internacao(conn, validators)
+                success = insert_internacao(conn, validators)
             elif event == "update_paciente":
-                update_paciente(conn, validators)
+                success = update_paciente(conn, validators)
             elif event == "update_consulta":
-                update_consulta(conn)
+                success = update_consulta(conn)
             elif event == "update_exame":
-                update_exame(conn)
+                success = update_exame(conn)
             elif event == "update_internacao":
-                update_internacao(conn)
+                success = update_internacao(conn)
             
-            counters[event] += 1
+            if success:
+                counters[event] += 1
             
             # Determinar tipo (INSERT ou UPDATE)
             op_type = "INSERT" if event.startswith("insert_") else "UPDATE"
@@ -332,8 +354,16 @@ def stream_loop(conn: psycopg2.extensions.connection, interval: int, max_jitter_
             ins = sum(v for k, v in counters.items() if k.startswith("insert_"))
             upd = sum(v for k, v in counters.items() if k.startswith("update_"))
             
-            logger.info(f"[{cycle:>5}] {op_type:>6} {table:>12} | INSERT: {ins:>4} | UPDATE: {upd:>4}")
+            status = "OK" if success else "SKIP"
+            logger.info(
+                f"[{cycle:>5}] {status:>4} {op_type:>6} {table:>12} | "
+                f"INSERT: {ins:>4} | UPDATE: {upd:>4}"
+            )
             
+            if cycles and cycle >= cycles:
+                should_stop = True
+                continue
+
             sleep_time = interval + jitter
             time.sleep(sleep_time)
         
@@ -369,7 +399,7 @@ def stream_loop(conn: psycopg2.extensions.connection, interval: int, max_jitter_
     logger.info(f"Stream encerrado: {cycle} ciclos, {total_ops} operações (INSERT: {ins_total}, UPDATE: {upd_total})")
 
 
-def main(interval: int = None, batch_size: int = None):
+def main(interval: int = None, batch_size: int = None, cycles: int = None):
     """Função principal de stream."""
     config = load_config()
     
@@ -390,7 +420,7 @@ def main(interval: int = None, batch_size: int = None):
     signal.signal(signal.SIGTERM, handle_signal)
     
     try:
-        stream_loop(conn, interval, config["max_jitter_ms"])
+        stream_loop(conn, interval, config["max_jitter_ms"], cycles=cycles)
     finally:
         try:
             logger.info("Fechando conexão...")
