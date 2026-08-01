@@ -275,7 +275,7 @@ PG_HOST_PORT=5432
 DASHBOARD_PORT=8501
 
 # Streaming Configuration
-STREAM_INTERVAL_SECONDS=2      # Delay between operations (seconds)
+STREAM_INTERVAL_SECONDS=10     # Delay between operations (seconds)
 BATCH_SIZE=50                  # Records per batch
 MAX_JITTER_MS=400              # Random delay variation (ms)
 
@@ -300,7 +300,7 @@ search_path = "public"
 connect_timeout = 10
 
 [stream]
-interval_seconds = 2
+interval_seconds = 10
 batch_size = 50
 max_jitter_ms = 400
 fail_fast_on_critical = true
