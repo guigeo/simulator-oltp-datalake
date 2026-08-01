@@ -6,6 +6,8 @@ import psycopg2
 from scripts.seed import (
     flush_conflict_aware_batch,
     flush_insert_batch,
+    log_seed_summary,
+    run_seed,
     seed_insert_rows,
 )
 
@@ -146,6 +148,72 @@ class SeedTests(unittest.TestCase):
         conn.cursor.assert_not_called()
         conn.commit.assert_not_called()
         self.assertEqual(inserted, 0)
+
+    def test_run_seed_returns_summary_in_insert_order(self):
+        conn = Mock()
+        config = {
+            "seed_medicos": 1,
+            "seed_pacientes": 2,
+            "seed_convenios": 3,
+            "seed_pacientes_convenios": 4,
+            "seed_consultas": 5,
+            "seed_exames": 6,
+            "seed_internacoes": 7,
+            "batch_size": 8,
+        }
+
+        patches = [
+            patch("scripts.seed.seed_medicos", return_value=10),
+            patch("scripts.seed.seed_pacientes", return_value=20),
+            patch("scripts.seed.seed_convenios", return_value=30),
+            patch("scripts.seed.seed_pacientes_convenios", return_value=40),
+            patch("scripts.seed.seed_consultas", return_value=50),
+            patch("scripts.seed.seed_exames", return_value=60),
+            patch("scripts.seed.seed_internacoes", return_value=70),
+        ]
+
+        with (
+            patches[0] as medicos,
+            patches[1] as pacientes,
+            patches[2] as convenios,
+            patches[3] as pacientes_convenios,
+            patches[4] as consultas,
+            patches[5] as exames,
+            patches[6] as internacoes,
+        ):
+            summary = run_seed(conn, config)
+
+        self.assertEqual(
+            summary,
+            {
+                "medicos": 10,
+                "pacientes": 20,
+                "convenios": 30,
+                "pacientes_convenios": 40,
+                "consultas": 50,
+                "exames": 60,
+                "internacoes": 70,
+            },
+        )
+        medicos.assert_called_once_with(conn, 1, 8)
+        pacientes.assert_called_once_with(conn, 2, 8)
+        convenios.assert_called_once_with(conn, 3, 8)
+        pacientes_convenios.assert_called_once_with(conn, 4, 8)
+        consultas.assert_called_once_with(conn, 5, 8)
+        exames.assert_called_once_with(conn, 6, 8)
+        internacoes.assert_called_once_with(conn, 7, 8)
+
+    def test_log_seed_summary_logs_total(self):
+        summary = {"medicos": 2, "pacientes": 3}
+
+        with self.assertLogs("scripts.seed", level="INFO") as logs:
+            log_seed_summary(summary)
+
+        output = "\n".join(logs.output)
+        self.assertIn("Resumo do seed", output)
+        self.assertIn("medicos: 2", output)
+        self.assertIn("pacientes: 3", output)
+        self.assertIn("Total inserido no seed: 5", output)
 
 
 if __name__ == "__main__":

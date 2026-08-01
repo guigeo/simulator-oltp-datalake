@@ -313,7 +313,7 @@ def seed_pacientes_convenios(
     except psycopg2.Error as e:
         logger.error(f"Erro ao seed de pacientes_convenios: {e}")
         conn.rollback()
-    
+
     return total_inserted
 
 
@@ -419,36 +419,51 @@ def seed_internacoes(
     )
 
 
+def run_seed(conn: psycopg2.extensions.connection, config: dict) -> dict:
+    """Executa seed em ordem e retorna resumo por tabela."""
+    batch_size = config["batch_size"]
+    return {
+        "medicos": seed_medicos(conn, config["seed_medicos"], batch_size),
+        "pacientes": seed_pacientes(conn, config["seed_pacientes"], batch_size),
+        "convenios": seed_convenios(conn, config["seed_convenios"], batch_size),
+        "pacientes_convenios": seed_pacientes_convenios(
+            conn,
+            config["seed_pacientes_convenios"],
+            batch_size,
+        ),
+        "consultas": seed_consultas(conn, config["seed_consultas"], batch_size),
+        "exames": seed_exames(conn, config["seed_exames"], batch_size),
+        "internacoes": seed_internacoes(
+            conn,
+            config["seed_internacoes"],
+            batch_size,
+        ),
+    }
+
+
+def log_seed_summary(summary: dict) -> None:
+    """Loga resumo consolidado do seed."""
+    total = sum(summary.values())
+    logger.info("Resumo do seed:")
+    for table, inserted in summary.items():
+        logger.info("  %s: %s", table, inserted)
+    logger.info("Total inserido no seed: %s", total)
+
+
 def main():
     """Executa seed completo."""
     config = load_config()
     env_vars = load_env()
-    
+
     conn = create_connection(env_vars)
     if not test_connection(conn):
         logger.error("Falha ao testar conexão com o banco.")
         conn.close()
         return
-    
+
     logger.info("Iniciando seed de dados...")
-    
-    # Seed em ordem
-    seed_medicos(conn, config["seed_medicos"], config["batch_size"])
-    seed_pacientes(conn, config["seed_pacientes"], config["batch_size"])
-    seed_convenios(conn, config["seed_convenios"], config["batch_size"])
-    seed_pacientes_convenios(
-        conn,
-        config["seed_pacientes_convenios"],
-        config["batch_size"],
-    )
-    seed_consultas(conn, config["seed_consultas"], config["batch_size"])
-    seed_exames(conn, config["seed_exames"], config["batch_size"])
-    seed_internacoes(
-        conn,
-        config["seed_internacoes"],
-        config["batch_size"],
-    )
-    
+    summary = run_seed(conn, config)
+    log_seed_summary(summary)
     logger.info("Seed concluído com sucesso!")
     conn.close()
 
