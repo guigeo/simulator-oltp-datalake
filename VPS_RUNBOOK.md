@@ -1,4 +1,4 @@
-# VPS Runbook
+# Hospital OLTP VPS Runbook
 
 ## Layout
 
@@ -38,7 +38,7 @@ Docker apos reinicio da VPS, desde que tenham sido iniciados pelo Compose.
 
 ## Systemd
 
-Servico de usuario usado na VPS:
+Servico de usuario usado na VPS para o Hospital OLTP:
 
 ```text
 ~/.config/systemd/user/hospital-simulator-stack.service
@@ -48,7 +48,7 @@ Conteudo:
 
 ```ini
 [Unit]
-Description=Hospital simulator dashboard stack
+Description=Hospital OLTP dashboard stack
 Wants=network-online.target
 After=network-online.target docker.service
 

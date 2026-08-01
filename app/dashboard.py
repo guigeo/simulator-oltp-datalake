@@ -11,8 +11,8 @@ from app.dashboard_data import (
 
 
 st.set_page_config(
-    page_title="Hospital Ops",
-    page_icon="",
+    page_title="Hospital OLTP",
+    page_icon="H",
     layout="wide",
 )
 
@@ -129,7 +129,7 @@ def render_atividade(snapshot: dict, recent_minutes: int) -> None:
 
 
 def main() -> None:
-    st.title("Hospital Ops")
+    st.title("Hospital OLTP")
 
     with st.sidebar:
         st.header("Atualizacao")

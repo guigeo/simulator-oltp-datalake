@@ -1,6 +1,6 @@
-# Alimentador-BD
+# Hospital OLTP
 
-**OLTP Hospital Simulator** — Continuous data streaming for CDC testing with Debezium or another CDC ingestion engine.
+**Hospital OLTP Simulator** — Continuous hospital data streaming for operational dashboards and CDC testing.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
@@ -10,7 +10,7 @@
 
 ## 🎯 Overview
 
-Alimentador-BD is a Python/PostgreSQL hospital OLTP simulator that generates **realistic hospital data** with continuous INSERT/UPDATE operations. It is now focused on local simulation, CDC with Debezium/Kafka, and an operational streaming dashboard.
+Hospital OLTP is a Python/PostgreSQL hospital OLTP simulator that generates **realistic hospital data** with continuous INSERT/UPDATE operations. It is focused on local simulation, CDC with Debezium/Kafka, and an operational streaming dashboard.
 
 ### Key Features
 
