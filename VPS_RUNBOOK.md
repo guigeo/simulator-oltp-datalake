@@ -36,6 +36,43 @@ simulator   sem porta publicada
 Os servicos principais usam `restart: unless-stopped`, entao voltam junto com o
 Docker apos reinicio da VPS, desde que tenham sido iniciados pelo Compose.
 
+## Systemd
+
+Servico de usuario usado na VPS:
+
+```text
+~/.config/systemd/user/hospital-simulator-stack.service
+```
+
+Conteudo:
+
+```ini
+[Unit]
+Description=Hospital simulator dashboard stack
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/gramos/projects/simulator-oltp-datalake
+Environment=DASHBOARD_PORT=8502
+ExecStart=/usr/bin/docker compose --profile dashboard --profile simulator up -d dashboard simulator
+ExecStop=/usr/bin/docker compose --profile dashboard --profile simulator stop simulator dashboard
+RemainAfterExit=yes
+TimeoutStartSec=180
+
+[Install]
+WantedBy=default.target
+```
+
+Comandos:
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now hospital-simulator-stack.service
+systemctl --user status hospital-simulator-stack.service --no-pager
+```
+
 ## Caddy
 
 Publicar acesso externo somente pelo Caddy:
