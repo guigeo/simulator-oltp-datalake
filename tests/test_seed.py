@@ -3,7 +3,11 @@ from unittest.mock import MagicMock, Mock, patch
 
 import psycopg2
 
-from scripts.seed import flush_insert_batch, seed_insert_rows
+from scripts.seed import (
+    flush_conflict_aware_batch,
+    flush_insert_batch,
+    seed_insert_rows,
+)
 
 
 class SeedTests(unittest.TestCase):
@@ -14,7 +18,13 @@ class SeedTests(unittest.TestCase):
         batch = [("a",), ("b",)]
 
         with patch("scripts.seed.execute_values") as execute_values:
-            total = flush_insert_batch(conn, "INSERT INTO table VALUES %s", batch, "Rows", 3)
+            total = flush_insert_batch(
+                conn,
+                "INSERT INTO table VALUES %s",
+                batch,
+                "Rows",
+                3,
+            )
 
         execute_values.assert_called_once_with(
             cursor,
@@ -27,7 +37,13 @@ class SeedTests(unittest.TestCase):
     def test_flush_insert_batch_skips_empty_batch(self):
         conn = Mock()
 
-        total = flush_insert_batch(conn, "INSERT INTO table VALUES %s", [], "Rows", 3)
+        total = flush_insert_batch(
+            conn,
+            "INSERT INTO table VALUES %s",
+            [],
+            "Rows",
+            3,
+        )
 
         conn.cursor.assert_not_called()
         conn.commit.assert_not_called()
@@ -95,6 +111,41 @@ class SeedTests(unittest.TestCase):
 
         self.assertEqual(total, 1)
         conn.rollback.assert_called_once_with()
+
+    def test_flush_conflict_aware_batch_returns_inserted_rows(self):
+        cursor = Mock()
+        conn = MagicMock()
+        conn.cursor.return_value.__enter__.return_value = cursor
+        batch = [("a",), ("b",)]
+
+        with patch("scripts.seed.execute_values", return_value=[(1,)]) as execute_values:
+            inserted = flush_conflict_aware_batch(
+                conn,
+                "INSERT INTO table VALUES %s RETURNING id",
+                batch,
+            )
+
+        execute_values.assert_called_once_with(
+            cursor,
+            "INSERT INTO table VALUES %s RETURNING id",
+            batch,
+            fetch=True,
+        )
+        conn.commit.assert_called_once_with()
+        self.assertEqual(inserted, 1)
+
+    def test_flush_conflict_aware_batch_skips_empty_batch(self):
+        conn = Mock()
+
+        inserted = flush_conflict_aware_batch(
+            conn,
+            "INSERT INTO table VALUES %s RETURNING id",
+            [],
+        )
+
+        conn.cursor.assert_not_called()
+        conn.commit.assert_not_called()
+        self.assertEqual(inserted, 0)
 
 
 if __name__ == "__main__":

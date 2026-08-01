@@ -62,6 +62,14 @@ INSERT INTO internacoes
 VALUES %s
 """
 
+INSERT_PACIENTES_CONVENIOS_SQL = """
+INSERT INTO pacientes_convenios
+(paciente_id, convenio_id, numero_carteira, validade)
+VALUES %s
+ON CONFLICT DO NOTHING
+RETURNING id
+"""
+
 
 def flush_insert_batch(
     conn: psycopg2.extensions.connection,
@@ -118,6 +126,20 @@ def seed_insert_rows(
         conn.rollback()
         return total_inserted
 
+
+def flush_conflict_aware_batch(
+    conn: psycopg2.extensions.connection,
+    sql: str,
+    batch: list[tuple],
+) -> int:
+    """Insere batch com RETURNING e retorna quantas linhas entraram."""
+    if not batch:
+        return 0
+
+    with conn.cursor() as cur:
+        inserted_rows = execute_values(cur, sql, batch, fetch=True)
+    conn.commit()
+    return len(inserted_rows)
 
 
 def load_config() -> dict:
@@ -230,61 +252,52 @@ def seed_pacientes_convenios(
 ) -> int:
     """Popula tabela N:N pacientes_convenios."""
     logger.info(f"Iniciando seed de {count} associações paciente-convênio...")
-    
+
     total_inserted = 0
     batch = []
     validators = Validators(conn)
     max_attempts = max(count * 10, batch_size)
     attempts = 0
 
-    def flush_batch() -> int:
-        nonlocal batch
-        if not batch:
-            return 0
+    def build_row() -> Optional[tuple]:
+        paciente_id = validators.get_random_paciente_id()
+        convenio_id = validators.get_random_convenio_id()
+        if not paciente_id or not convenio_id:
+            return None
 
-        with conn.cursor() as cur:
-            inserted_rows = execute_values(
-                cur,
-                """
-                INSERT INTO pacientes_convenios
-                (paciente_id, convenio_id, numero_carteira, validade)
-                VALUES %s
-                ON CONFLICT DO NOTHING
-                RETURNING id
-                """,
-                batch,
-                fetch=True,
-            )
-        conn.commit()
-        inserted = len(inserted_rows)
+        return (
+            paciente_id,
+            convenio_id,
+            f"CARTEIRA-{paciente_id}-{convenio_id}",
+            datetime.now().date(),
+        )
+
+    def flush_and_count() -> int:
+        nonlocal batch
+        inserted = flush_conflict_aware_batch(
+            conn,
+            INSERT_PACIENTES_CONVENIOS_SQL,
+            batch,
+        )
         batch = []
         return inserted
-    
+
     try:
         while total_inserted < count and attempts < max_attempts:
             attempts += 1
-            paciente_id = validators.get_random_paciente_id()
-            convenio_id = validators.get_random_convenio_id()
-            
-            if paciente_id and convenio_id:
-                batch.append(
-                    (
-                        paciente_id,
-                        convenio_id,
-                        f"CARTEIRA-{paciente_id}-{convenio_id}",
-                        datetime.now().date(),
-                    )
-                )
-            
+            row = build_row()
+            if row:
+                batch.append(row)
+
             if len(batch) >= batch_size or total_inserted + len(batch) >= count:
-                inserted = flush_batch()
+                inserted = flush_and_count()
                 total_inserted += inserted
                 logger.info(
                     f"Pacientes_Convênios: +{inserted} (total={total_inserted})"
                 )
-        
+
         if batch:
-            inserted = flush_batch()
+            inserted = flush_and_count()
             total_inserted += inserted
             logger.info(
                 f"Pacientes_Convênios: +{inserted} (total={total_inserted})"
