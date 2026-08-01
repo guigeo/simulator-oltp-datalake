@@ -1,4 +1,4 @@
-.PHONY: install up down ps logs dashboard dashboard-test cdc-up cdc-down cdc-topics cdc-consume connector-create connector-recreate connector-status connector-delete connector-list docker-build docker-init docker-reset docker-stream docker-stream-test docker-test init seed stream stream-test counts reset test test-integration test-connection fmt lint clean help
+.PHONY: install up down ps logs dashboard dashboard-test docker-dashboard docker-dashboard-build docker-dashboard-test docker-dashboard-logs cdc-up cdc-down cdc-topics cdc-consume connector-create connector-recreate connector-status connector-delete connector-list docker-build docker-init docker-reset docker-stream docker-stream-test docker-test init seed stream stream-test counts reset test test-integration test-connection fmt lint clean help
 
 PYTHON ?= python3
 VENV_PYTHON := .venv/bin/python
@@ -33,6 +33,8 @@ help:
 	@echo "Dashboard:"
 	@echo "  make dashboard        - Inicia dashboard operacional"
 	@echo "  make dashboard-test   - Valida imports do dashboard"
+	@echo "  make docker-dashboard - Inicia dashboard via Docker"
+	@echo "  make docker-dashboard-test - Valida dashboard no container"
 	@echo ""
 	@echo "CDC:"
 	@echo "  make cdc-up           - Sobe Kafka, Connect e Kafka UI"
@@ -87,6 +89,18 @@ dashboard:
 
 dashboard-test:
 	@$(VENV_PYTHON) -c "import app.dashboard_data; import app.dashboard"
+
+docker-dashboard-build:
+	docker compose build dashboard
+
+docker-dashboard:
+	docker compose --profile dashboard up -d --remove-orphans dashboard
+
+docker-dashboard-test:
+	docker compose run --rm dashboard python -c "import app.dashboard_data; import app.dashboard"
+
+docker-dashboard-logs:
+	docker compose logs -f dashboard
 
 cdc-up:
 	docker compose --profile cdc up -d

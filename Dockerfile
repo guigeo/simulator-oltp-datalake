@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /opt/venv /opt/venv
 
 # Copy application
+COPY app/ ./app/
 COPY scripts/ ./scripts/
 COPY sql/ ./sql/
 COPY config/ ./config/
@@ -42,6 +43,7 @@ RUN mkdir -p logs
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONUNBUFFERED=1
 ENV LOG_LEVEL=INFO
+EXPOSE 8501
 
 # Default command: show help
 CMD ["python", "-m", "scripts.cli", "--help"]

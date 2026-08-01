@@ -15,6 +15,7 @@ Simular um banco OLTP hospitalar em PostgreSQL para gerar eventos realistas de I
 - Docker Compose com perfis:
   - default: `postgres`
   - `simulator`: app Python containerizada
+  - `dashboard`: dashboard Streamlit containerizado
   - `cdc`: Kafka, Kafka Connect, Kafka UI
 
 ## Configuracao
@@ -41,11 +42,12 @@ Validado localmente:
 - `make cdc-up`
 - `make connector-status`
 - `make dashboard-test`
+- `make docker-dashboard-test`
 
 ## Pontos de Atencao
 
 - `config/.env` e ignorado pelo Git.
 - O Compose default deve continuar subindo somente Postgres.
 - S3, Databricks, raw lake e consumer de lake foram removidos do escopo.
-- Dashboard operacional local existe em `app/dashboard.py` e le PostgreSQL direto.
-- Proximo passo do dashboard: empacotar em Docker e preparar VPS.
+- Dashboard operacional existe em `app/dashboard.py`, le PostgreSQL direto e roda via host ou Docker Compose.
+- Proximo passo do dashboard: preparar VPS.

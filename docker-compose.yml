@@ -43,6 +43,42 @@ services:
       - simulator
     command: ["python", "-m", "scripts.cli", "stream"]
 
+  dashboard:
+    build:
+      context: .
+    container_name: hospital_dashboard
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - config/.env
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+      PG_USER: app
+      PG_PASSWORD: app123
+      PG_DATABASE: teste_pacientes
+    ports:
+      - "8501:8501"
+    networks:
+      - alimentador_net
+    profiles:
+      - dashboard
+    command:
+      [
+        "python",
+        "-m",
+        "streamlit",
+        "run",
+        "app/dashboard.py",
+        "--server.address",
+        "0.0.0.0",
+        "--server.port",
+        "8501",
+        "--browser.gatherUsageStats",
+        "false",
+      ]
+
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: alimentador_pgadmin

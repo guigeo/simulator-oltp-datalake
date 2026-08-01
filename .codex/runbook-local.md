@@ -30,6 +30,14 @@ URL local:
 http://127.0.0.1:8501
 ```
 
+Dashboard via Docker:
+
+```bash
+make docker-dashboard-build
+make docker-dashboard
+make docker-dashboard-test
+```
+
 ## Docker App
 
 ```bash

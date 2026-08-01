@@ -123,6 +123,14 @@ http://127.0.0.1:8501
 
 The first dashboard version reads PostgreSQL directly and refreshes automatically.
 
+Docker workflow:
+
+```bash
+make docker-dashboard-build
+make docker-dashboard
+make docker-dashboard-test
+```
+
 ### 7. Optional CDC Stack
 
 ```bash
@@ -172,6 +180,8 @@ Docker Desktop does not expose port `8083` correctly on the host.
 | `make test-connection` | Validate PostgreSQL connection |
 | `make dashboard` | Start operational dashboard |
 | `make dashboard-test` | Validate dashboard imports |
+| `make docker-dashboard` | Start operational dashboard with Docker Compose |
+| `make docker-dashboard-test` | Validate dashboard inside the container |
 | `make cdc-up` | Start PostgreSQL, Kafka, Connect and Kafka UI |
 | `make cdc-down` | Stop CDC stack |
 | `make cdc-topics` | List Kafka topics |
