@@ -15,6 +15,7 @@
     "plugin.name": "pgoutput",
 
     "slot.name": "slot_oltp",
+    "publication.name": "dbz_publication",
     "publication.autocreate.mode": "filtered",
 
     "schema.include.list": "public",

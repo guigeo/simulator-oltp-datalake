@@ -30,10 +30,27 @@ make docker-stream-test
 Ainda pendente de validacao completa.
 
 ```bash
-docker compose --profile cdc up -d
-curl -X POST http://localhost:8083/connectors \
-  -H "Content-Type: application/json" \
-  --data @connectors/connector-oltp.json
+make cdc-up
+make connector-create
+make connector-status
+```
+
+Os alvos `connector-*` chamam a API REST por dentro do container
+`alimentador_connect`, evitando depender da porta `8083` exposta no host.
+
+Depois de alterar `connectors/connector-oltp.json`, use:
+
+```bash
+make connector-recreate
+make connector-status
+```
+
+Prova rapida do CDC:
+
+```bash
+make stream-test
+make cdc-topics
+make cdc-consume TOPIC=oltp.public.pacientes MESSAGES=1
 ```
 
 Kafka UI:
@@ -73,4 +90,3 @@ CLI no container:
 docker compose run --rm simulator python -m scripts.cli --help
 docker compose run --rm simulator python -m scripts.cli stream --help
 ```
-

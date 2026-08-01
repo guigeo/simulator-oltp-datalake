@@ -290,6 +290,13 @@ make reset             # Drop + recreate + seed
 make counts            # Ver contagens
 make test              # Executar testes unitários
 make test-connection   # Testar conexão com PostgreSQL
+make cdc-up            # Subir Kafka, Connect e Kafka UI
+make cdc-topics        # Listar tópicos Kafka
+make cdc-consume       # Consumir mensagens de um tópico
+make connector-create  # Criar connector Debezium
+make connector-recreate # Recriar connector Debezium
+make connector-status  # Ver status do connector
+make connector-delete  # Remover connector Debezium
 make docker-build      # Buildar imagem do simulador
 make docker-reset      # Reset via container do simulador
 make docker-stream-test # Stream curto via container

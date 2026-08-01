@@ -112,16 +112,28 @@ make test
 
 ```bash
 # Start PostgreSQL + Kafka + Kafka Connect + Kafka UI
-docker compose --profile cdc up -d
+make cdc-up
 
 # Create Debezium connector
-curl -X POST http://localhost:8083/connectors \
-  -H "Content-Type: application/json" \
-  --data @connectors/connector-oltp.json
+make connector-create
+
+# Recreate Debezium connector after config changes
+make connector-recreate
+
+# Check connector status
+make connector-status
+
+# Inspect Kafka topics and sample messages
+make cdc-topics
+make cdc-consume TOPIC=oltp.public.pacientes MESSAGES=1
 
 # Kafka UI
 # http://localhost:8088
 ```
+
+The connector commands call the Kafka Connect REST API from inside the
+`alimentador_connect` container. This keeps the local workflow stable even when
+Docker Desktop does not expose port `8083` correctly on the host.
 
 ---
 
@@ -142,6 +154,15 @@ curl -X POST http://localhost:8083/connectors \
 | `make counts` | Display table record counts |
 | `make test` | Run unit tests with unittest |
 | `make test-connection` | Validate PostgreSQL connection |
+| `make cdc-up` | Start PostgreSQL, Kafka, Connect and Kafka UI |
+| `make cdc-down` | Stop CDC stack |
+| `make cdc-topics` | List Kafka topics |
+| `make cdc-consume` | Consume Kafka messages from `TOPIC` |
+| `make connector-create` | Create Debezium connector |
+| `make connector-recreate` | Delete and create Debezium connector |
+| `make connector-status` | Show Debezium connector status |
+| `make connector-delete` | Delete Debezium connector |
+| `make connector-list` | List Kafka Connect connectors |
 | `make fmt` | Format code with Black |
 | `make lint` | Check code with Ruff |
 | `make clean` | Remove cache and temp files |

@@ -1,7 +1,12 @@
-.PHONY: install up down ps logs docker-build docker-init docker-reset docker-stream docker-stream-test docker-test init seed stream stream-test counts reset test test-connection fmt lint clean help
+.PHONY: install up down ps logs cdc-up cdc-down cdc-topics cdc-consume connector-create connector-recreate connector-status connector-delete connector-list docker-build docker-init docker-reset docker-stream docker-stream-test docker-test init seed stream stream-test counts reset test test-connection fmt lint clean help
 
 PYTHON ?= python3
 VENV_PYTHON := .venv/bin/python
+CONNECT_CONTAINER ?= alimentador_connect
+KAFKA_CONTAINER ?= alimentador_kafka
+KAFKA_BROKER ?= alimentador_kafka:29092
+TOPIC ?= oltp.public.pacientes
+MESSAGES ?= 1
 
 # Default target
 help:
@@ -21,6 +26,17 @@ help:
 	@echo "  make counts           - Exibe contagem de registros por tabela"
 	@echo "  make test-connection  - Testa conexão com PostgreSQL"
 	@echo "  make test             - Executa testes unitários"
+	@echo ""
+	@echo "CDC:"
+	@echo "  make cdc-up           - Sobe Kafka, Connect e Kafka UI"
+	@echo "  make cdc-down         - Para a stack CDC"
+	@echo "  make cdc-topics       - Lista tópicos Kafka"
+	@echo "  make cdc-consume      - Consome mensagens de TOPIC"
+	@echo "  make connector-create   - Cria connector Debezium"
+	@echo "  make connector-recreate - Recria connector Debezium"
+	@echo "  make connector-status   - Mostra status do connector"
+	@echo "  make connector-delete   - Remove connector Debezium"
+	@echo "  make connector-list     - Lista connectors"
 	@echo ""
 	@echo "Streaming:"
 	@echo "  make stream           - Inicia inserção contínua"
@@ -58,6 +74,37 @@ ps:
 
 logs:
 	docker compose logs -f postgres
+
+cdc-up:
+	docker compose --profile cdc up -d
+
+cdc-down:
+	docker compose --profile cdc down
+
+cdc-topics:
+	docker exec $(KAFKA_CONTAINER) kafka-topics --bootstrap-server $(KAFKA_BROKER) --list
+
+cdc-consume:
+	docker exec $(KAFKA_CONTAINER) kafka-console-consumer --bootstrap-server $(KAFKA_BROKER) --topic $(TOPIC) --from-beginning --max-messages $(MESSAGES) --timeout-ms 10000
+
+connector-create:
+	docker exec -i $(CONNECT_CONTAINER) curl -sS -X POST http://localhost:8083/connectors \
+		-H "Content-Type: application/json" \
+		--data @- < connectors/connector-oltp.json
+
+connector-recreate:
+	-$(MAKE) connector-delete
+	sleep 2
+	$(MAKE) connector-create
+
+connector-status:
+	docker exec $(CONNECT_CONTAINER) curl -sS http://localhost:8083/connectors/cdc-oltp/status
+
+connector-delete:
+	docker exec $(CONNECT_CONTAINER) curl -sS -X DELETE http://localhost:8083/connectors/cdc-oltp
+
+connector-list:
+	docker exec $(CONNECT_CONTAINER) curl -sS http://localhost:8083/connectors
 
 docker-build:
 	docker compose build simulator
