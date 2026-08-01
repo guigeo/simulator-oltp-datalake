@@ -32,13 +32,16 @@ def render_status_table(title: str, rows: list[dict]) -> None:
 def render_alerts(alerts: list[dict]) -> None:
     st.subheader("Alertas operacionais")
     if not alerts:
-        st.success("Nenhum alerta operacional ativo.")
+        st.success("Operacao dentro dos limites simulados.")
         return
 
     for alert in alerts:
+        label = "Critico" if alert["severidade"] == "crítico" else "Atencao"
         message = (
-            f"{alert['titulo']}: {alert['valor']} "
-            f"(limite {alert['limite']})"
+            f"{label}: {alert['titulo']} - "
+            f"{alert['valor']} registros "
+            f"({alert['percentual']}% do limite de {alert['limite']}). "
+            f"{alert['acao']}"
         )
         if alert["severidade"] == "crítico":
             st.error(message)

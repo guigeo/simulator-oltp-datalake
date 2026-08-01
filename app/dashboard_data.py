@@ -5,6 +5,50 @@ import psycopg2
 from scripts.db_init import create_connection, load_env, load_project_env
 
 
+DEFAULT_ALERT_RULES = [
+    {
+        "codigo": "exames_pendentes",
+        "titulo": "Exames aguardando resultado",
+        "valor_kpi": "exames_pendentes",
+        "atencao": 900,
+        "critico": 1400,
+        "acao": "Acompanhar fila do laboratorio e priorizar exames antigos.",
+    },
+    {
+        "codigo": "consultas_agendadas",
+        "titulo": "Agenda futura com alta demanda",
+        "valor_kpi": "consultas_agendadas",
+        "atencao": 2400,
+        "critico": 3200,
+        "acao": "Revisar disponibilidade medica e distribuicao por especialidade.",
+    },
+    {
+        "codigo": "internacoes_ativas",
+        "titulo": "Internacoes ativas acima da capacidade simulada",
+        "valor_kpi": "internacoes_ativas",
+        "atencao": 420,
+        "critico": 650,
+        "acao": "Verificar altas pendentes e ocupacao por quarto.",
+    },
+    {
+        "codigo": "pacientes_sem_convenio",
+        "titulo": "Pacientes sem convenio cadastrado",
+        "valor_lista": "pacientes_sem_convenio",
+        "atencao": 25,
+        "critico": 75,
+        "acao": "Conferir cadastro financeiro dos pacientes recentes.",
+    },
+    {
+        "codigo": "internacoes_longas",
+        "titulo": "Internacoes longas aguardando fechamento",
+        "valor_lista": "internacoes_longas",
+        "atencao": 25,
+        "critico": 60,
+        "acao": "Revisar casos ativos com maior tempo de permanencia.",
+    },
+]
+
+
 def dashboard_connection() -> psycopg2.extensions.connection:
     """Cria conexao para o dashboard usando config/.env."""
     load_project_env()
@@ -294,49 +338,61 @@ def get_consultas_agendadas_proximas(
 
 def get_operational_alerts(
     snapshot: dict[str, Any],
-    thresholds: Optional[dict[str, int]] = None,
+    thresholds: Optional[dict[str, Any]] = None,
 ) -> list[dict[str, Any]]:
-    """Calcula alertas operacionais simples a partir do snapshot."""
+    """Calcula alertas operacionais calibrados para acompanhamento."""
     thresholds = thresholds or {}
     kpis = snapshot.get("kpis", {})
-    rules = [
-        {
-            "codigo": "exames_pendentes",
-            "titulo": "Exames pendentes acima do limite",
-            "valor": kpis.get("exames_pendentes", 0),
-            "limite": thresholds.get("exames_pendentes", 50),
-            "severidade": "atenção",
-        },
-        {
-            "codigo": "consultas_agendadas",
-            "titulo": "Consultas agendadas acumuladas",
-            "valor": kpis.get("consultas_agendadas", 0),
-            "limite": thresholds.get("consultas_agendadas", 500),
-            "severidade": "atenção",
-        },
-        {
-            "codigo": "internacoes_ativas",
-            "titulo": "Internações ativas acima do limite",
-            "valor": kpis.get("internacoes_ativas", 0),
-            "limite": thresholds.get("internacoes_ativas", 100),
-            "severidade": "crítico",
-        },
-        {
-            "codigo": "pacientes_sem_convenio",
-            "titulo": "Pacientes sem convênio",
-            "valor": len(snapshot.get("pacientes_sem_convenio", [])),
-            "limite": thresholds.get("pacientes_sem_convenio", 0),
-            "severidade": "atenção",
-        },
-        {
-            "codigo": "internacoes_longas",
-            "titulo": "Internações longas em aberto",
-            "valor": len(snapshot.get("internacoes_longas", [])),
-            "limite": thresholds.get("internacoes_longas", 0),
-            "severidade": "crítico",
-        },
-    ]
-    return [rule for rule in rules if rule["valor"] > rule["limite"]]
+    alerts = []
+
+    for rule in DEFAULT_ALERT_RULES:
+        value = kpis.get(rule["valor_kpi"], 0) if "valor_kpi" in rule else len(
+            snapshot.get(rule["valor_lista"], [])
+        )
+        attention_limit, critical_limit = resolve_alert_limits(rule, thresholds)
+        if value <= attention_limit:
+            continue
+
+        severity = "crítico" if value > critical_limit else "atenção"
+        limit = critical_limit if severity == "crítico" else attention_limit
+        alerts.append(
+            {
+                "codigo": rule["codigo"],
+                "titulo": rule["titulo"],
+                "valor": value,
+                "limite": limit,
+                "limite_atencao": attention_limit,
+                "limite_critico": critical_limit,
+                "severidade": severity,
+                "acao": rule["acao"],
+                "percentual": round((value / limit) * 100, 1) if limit else 0,
+            }
+        )
+
+    severity_order = {"crítico": 0, "atenção": 1}
+    return sorted(
+        alerts,
+        key=lambda alert: (severity_order[alert["severidade"]], -alert["valor"]),
+    )
+
+
+def resolve_alert_limits(
+    rule: dict[str, Any],
+    thresholds: dict[str, Any],
+) -> tuple[int, int]:
+    """Resolve limites padrao e overrides simples para uma regra."""
+    override = thresholds.get(rule["codigo"])
+    if isinstance(override, dict):
+        attention = int(override.get("atencao", rule["atencao"]))
+        critical = int(override.get("critico", rule["critico"]))
+    elif override is not None:
+        attention = int(override)
+        critical = max(attention + 1, int(attention * 2))
+    else:
+        attention = int(rule["atencao"])
+        critical = int(rule["critico"])
+
+    return attention, max(critical, attention + 1)
 
 
 def get_atividade_recente(

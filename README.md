@@ -123,7 +123,7 @@ http://127.0.0.1:8501
 
 The first dashboard version reads PostgreSQL directly and refreshes automatically.
 It includes operational tabs for overview, appointments, exams, admissions and
-recent activity, plus simple alerts for accumulated demand and long admissions.
+recent activity, plus calibrated alerts with severity and suggested actions.
 Docker-published ports bind to `127.0.0.1` by default, which keeps the local/VPS
 services private until a reverse proxy is configured explicitly.
 

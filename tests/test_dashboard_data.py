@@ -62,9 +62,9 @@ class DashboardDataTests(unittest.TestCase):
         alerts = get_operational_alerts(
             snapshot,
             thresholds={
-                "exames_pendentes": 10,
-                "consultas_agendadas": 10,
-                "internacoes_ativas": 10,
+                "exames_pendentes": {"atencao": 10, "critico": 20},
+                "consultas_agendadas": {"atencao": 10, "critico": 20},
+                "internacoes_ativas": {"atencao": 10, "critico": 20},
                 "pacientes_sem_convenio": 0,
                 "internacoes_longas": 0,
             },
@@ -73,11 +73,40 @@ class DashboardDataTests(unittest.TestCase):
         self.assertEqual(
             [alert["codigo"] for alert in alerts],
             [
+                "internacoes_longas",
                 "exames_pendentes",
                 "pacientes_sem_convenio",
-                "internacoes_longas",
             ],
         )
+        self.assertEqual(alerts[0]["severidade"], "crítico")
+        self.assertEqual(alerts[1]["limite_atencao"], 10)
+        self.assertIn("acao", alerts[0])
+
+    def test_get_operational_alerts_marks_critical_rules_first(self):
+        snapshot = {
+            "kpis": {
+                "exames_pendentes": 21,
+                "consultas_agendadas": 11,
+                "internacoes_ativas": 1,
+            },
+            "pacientes_sem_convenio": [],
+            "internacoes_longas": [],
+        }
+
+        alerts = get_operational_alerts(
+            snapshot,
+            thresholds={
+                "exames_pendentes": {"atencao": 10, "critico": 20},
+                "consultas_agendadas": {"atencao": 10, "critico": 20},
+            },
+        )
+
+        self.assertEqual([alert["codigo"] for alert in alerts], [
+            "exames_pendentes",
+            "consultas_agendadas",
+        ])
+        self.assertEqual(alerts[0]["severidade"], "crítico")
+        self.assertEqual(alerts[1]["severidade"], "atenção")
 
     def test_get_operational_alerts_returns_empty_list_when_within_limits(self):
         snapshot = {
