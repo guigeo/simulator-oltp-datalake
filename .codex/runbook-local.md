@@ -38,6 +38,9 @@ make docker-dashboard
 make docker-dashboard-test
 ```
 
+As portas publicadas pelo Docker ficam presas em `127.0.0.1`. Na VPS,
+publique acesso externo somente por reverse proxy.
+
 Porta alternativa:
 
 ```bash

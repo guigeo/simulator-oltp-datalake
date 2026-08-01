@@ -124,6 +124,8 @@ http://127.0.0.1:8501
 The first dashboard version reads PostgreSQL directly and refreshes automatically.
 It includes operational tabs for overview, appointments, exams, admissions and
 recent activity, plus simple alerts for accumulated demand and long admissions.
+Docker-published ports bind to `127.0.0.1` by default, which keeps the local/VPS
+services private until a reverse proxy is configured explicitly.
 
 Docker workflow:
 
@@ -267,6 +269,10 @@ PG_PORT=5432
 PG_USER=app
 PG_PASSWORD=app123
 PG_DATABASE=teste_pacientes
+
+# Optional Docker host port overrides
+PG_HOST_PORT=5432
+DASHBOARD_PORT=8501
 
 # Streaming Configuration
 STREAM_INTERVAL_SECONDS=2      # Delay between operations (seconds)
