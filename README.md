@@ -10,7 +10,7 @@
 
 ## 🎯 Overview
 
-Alimentador-BD is a production-ready Python simulator that generates **realistic hospital data** in PostgreSQL with continuous INSERT/UPDATE operations. Perfect for testing **CDC (Change Data Capture)** pipelines with Debezium, validating data consistency, and developing ETL/ELT systems.
+Alimentador-BD is a Python/PostgreSQL hospital OLTP simulator that generates **realistic hospital data** with continuous INSERT/UPDATE operations. It is now focused on local simulation, CDC with Debezium/Kafka, and an operational streaming dashboard.
 
 ### Key Features
 
@@ -31,11 +31,11 @@ Alimentador-BD is a production-ready Python simulator that generates **realistic
 - Batch operations with transaction support
 - Comprehensive logging with rotation
 
-🐳 **Multiple Deployment Options**
-- Local development (Docker Compose)
-- AWS EC2 / RDS
-- Kubernetes
-- Standalone Python
+🐳 **Deployment Path**
+- Local development with Docker Compose
+- VPS deployment after local validation
+- Standalone Python simulator
+- Future operational dashboard
 
 📚 **Comprehensive Documentation**
 - Quick start (5 minutes)
@@ -79,7 +79,7 @@ make up
 make test-connection
 ```
 
-By default, `docker compose` starts only PostgreSQL. Kafka, Debezium and the raw consumer are opt-in profiles.
+By default, `docker compose` starts only PostgreSQL. Kafka, Debezium and Kafka UI are opt-in through the `cdc` profile.
 
 ### 3. Initialize Database
 
@@ -504,11 +504,10 @@ docker run --rm \
 ## ☁️ Production Deployment
 
 See **[DEPLOYMENT.md](DEPLOYMENT.md)** for detailed guides:
-- ✅ AWS EC2 + RDS setup
-- ✅ Kubernetes deployment
-- ✅ Monitoring and scaling
-- ✅ Backup and recovery
-- ✅ Security best practices
+- ✅ VPS deployment plan
+- ✅ Service layout
+- ✅ Backup and recovery checklist
+- ✅ Reverse proxy and security checklist
 
 ---
 
@@ -519,7 +518,7 @@ See **[DEPLOYMENT.md](DEPLOYMENT.md)** for detailed guides:
 | [**README.md**](README.md) | Overview, quick start, schema (this file) |
 | [**GUIDE.md**](GUIDE.md) | Complete user manual in Portuguese 🇧🇷 |
 | [**ARCHITECTURE.md**](ARCHITECTURE.md) | Technical design and data flow |
-| [**DEPLOYMENT.md**](DEPLOYMENT.md) | Production setup (AWS, K8s, Docker) |
+| [**DEPLOYMENT.md**](DEPLOYMENT.md) | VPS deployment plan |
 | [**CONTRIBUTING.md**](CONTRIBUTING.md) | How to contribute, dev setup |
 | [**CHANGELOG.md**](CHANGELOG.md) | Version history and roadmap |
 

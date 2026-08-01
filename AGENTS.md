@@ -4,20 +4,22 @@ Instrucoes para agentes trabalhando neste repositorio.
 
 ## Contexto do Projeto
 
-Este projeto e um simulador OLTP hospitalar em Python/PostgreSQL para testes de CDC com Debezium, Kafka e uma futura camada raw/lake.
+Este projeto e um simulador OLTP hospitalar em Python/PostgreSQL para operacao local, testes de CDC com Debezium/Kafka e um futuro dashboard operacional em streaming.
 
 O trabalho atual segue uma estrategia local-first:
 
 1. manter Postgres + simulador funcionando localmente;
 2. testar e refatorar em passos pequenos;
-3. so depois ativar CDC/Kafka;
-4. por ultimo preparar VPS.
+3. manter CDC/Kafka validado localmente;
+4. criar dashboard operacional local;
+5. por ultimo preparar VPS.
 
 ## Regras de Trabalho
 
 - Use `config/.env` como arquivo oficial de configuracao da aplicacao.
 - Nao use o `.env` da raiz para configuracao do simulador.
-- Preserve o fluxo local antes de mexer em CDC/S3/Databricks.
+- Preserve o fluxo local antes de mexer em CDC/dashboard.
+- Nao reintroduza S3, Databricks, raw lake ou consumer de lake neste projeto.
 - Prefira mudancas pequenas e verificaveis.
 - Nao rode comandos destrutivos como `make reset` sem autorizacao explicita do usuario.
 - Antes de finalizar alteracoes, rode pelo menos:
@@ -65,6 +67,5 @@ O branch `main` esta adiantado em relacao a `origin/main` por esses commits loca
 1. Melhorar `seed.py`/`stream.py` com menos duplicacao e logs mais ricos.
 2. Criar testes de integracao opcionais para Postgres.
 3. Validar Compose `cdc` com Debezium/Kafka.
-4. Refatorar `consumer_universal` antes de ativar S3/lake.
+4. Criar dashboard operacional local para acompanhamento hospitalar.
 5. Preparar `VPS_RUNBOOK.md`.
-

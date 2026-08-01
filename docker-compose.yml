@@ -71,7 +71,6 @@ services:
       - alimentador_net
     profiles:
       - cdc
-      - lake
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -97,7 +96,6 @@ services:
       - alimentador_net
     profiles:
       - cdc
-      - lake
 
   connect:
     image: debezium/connect:2.7.0.Final
@@ -123,7 +121,6 @@ services:
       - alimentador_net
     profiles:
       - cdc
-      - lake
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -140,25 +137,6 @@ services:
     profiles:
       - cdc
       - debug
-      - lake
-
-  consumer_universal:
-    build:
-      context: ./consumers/raw
-    container_name: consumer_universal
-    depends_on:
-      - kafka
-    env_file:
-      - config/.env
-    environment:
-      KAFKA_BROKER: alimentador_kafka:29092
-      S3_BUCKET: gbrj-simulator-oltp-datalake
-      S3_BASE_PREFIX: raw
-    networks:
-      - alimentador_net
-    restart: unless-stopped
-    profiles:
-      - lake
 
 
 volumes:

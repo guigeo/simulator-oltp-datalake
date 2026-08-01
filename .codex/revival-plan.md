@@ -14,7 +14,7 @@ Status: concluida.
 
 - `config/.env` padronizado como fonte oficial.
 - Compose default reduzido para Postgres.
-- Perfis `cdc`, `lake` e `simulator` separados.
+- Perfis `cdc` e `simulator` separados.
 
 ## Fase 2: CLI e Makefile
 
@@ -83,26 +83,27 @@ Proximos passos:
 - Validar Kafka UI e topicos.
 - Confirmar eventos insert/update.
 
-## Fase 7: Raw Consumer
+## Fase 7: Dashboard Operacional
 
 Status: pendente.
 
 Proximos passos:
 
-- Refatorar `consumer_universal.py`.
-- Remover credenciais hardcoded/ambiguous.
-- Definir formato raw oficial, preferencialmente JSON Lines.
-- Testar localmente antes de S3 real.
+- Criar dashboard local para acompanhamento hospitalar.
+- Comecar por consultas diretas no PostgreSQL.
+- Adicionar auto-refresh e indicadores operacionais.
+- Depois decidir se o dashboard tambem precisa ler eventos Kafka.
 
-## Fase 8: Databricks Bronze
+## Fase 8: Remocao Lake/S3/Databricks
 
-Status: pendente.
+Status: concluida.
 
-Proximos passos:
+Concluido:
 
-- Corrigir parsing conforme formato raw final.
-- Adicionar tabela `convenios`.
-- Tipar ids/timestamps.
+- Removido consumer raw para S3.
+- Removidos artefatos Databricks.
+- Removido profile `lake` do Compose.
+- Documentacao reposicionada para VPS e dashboard operacional.
 
 ## Fase 9: VPS
 
@@ -114,4 +115,3 @@ Proximos passos:
 - Revisar portas expostas.
 - Volumes persistentes.
 - Backups e restart policy.
-
