@@ -106,6 +106,7 @@ make stream-test  # 5-cycle smoke test, exits automatically
 
 ```bash
 make test
+make test-integration  # Optional PostgreSQL integration tests
 ```
 
 ### 6. Optional CDC Stack
@@ -153,6 +154,7 @@ Docker Desktop does not expose port `8083` correctly on the host.
 | `make reset` | Drop + recreate + seed all |
 | `make counts` | Display table record counts |
 | `make test` | Run unit tests with unittest |
+| `make test-integration` | Run optional PostgreSQL integration tests |
 | `make test-connection` | Validate PostgreSQL connection |
 | `make cdc-up` | Start PostgreSQL, Kafka, Connect and Kafka UI |
 | `make cdc-down` | Stop CDC stack |

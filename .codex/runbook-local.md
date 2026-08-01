@@ -14,6 +14,7 @@ make counts
 
 ```bash
 make test
+make test-integration
 make stream-test
 ```
 
@@ -27,7 +28,7 @@ make docker-stream-test
 
 ## CDC Local
 
-Ainda pendente de validacao completa.
+Validado localmente com Debezium, Kafka e Kafka UI.
 
 ```bash
 make cdc-up

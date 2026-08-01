@@ -1,4 +1,4 @@
-.PHONY: install up down ps logs cdc-up cdc-down cdc-topics cdc-consume connector-create connector-recreate connector-status connector-delete connector-list docker-build docker-init docker-reset docker-stream docker-stream-test docker-test init seed stream stream-test counts reset test test-connection fmt lint clean help
+.PHONY: install up down ps logs cdc-up cdc-down cdc-topics cdc-consume connector-create connector-recreate connector-status connector-delete connector-list docker-build docker-init docker-reset docker-stream docker-stream-test docker-test init seed stream stream-test counts reset test test-integration test-connection fmt lint clean help
 
 PYTHON ?= python3
 VENV_PYTHON := .venv/bin/python
@@ -26,6 +26,7 @@ help:
 	@echo "  make counts           - Exibe contagem de registros por tabela"
 	@echo "  make test-connection  - Testa conexão com PostgreSQL"
 	@echo "  make test             - Executa testes unitários"
+	@echo "  make test-integration - Executa testes opcionais com PostgreSQL"
 	@echo ""
 	@echo "CDC:"
 	@echo "  make cdc-up           - Sobe Kafka, Connect e Kafka UI"
@@ -149,6 +150,9 @@ test-connection:
 
 test:
 	@$(VENV_PYTHON) -m unittest discover -s tests -p 'test_*.py'
+
+test-integration:
+	@$(VENV_PYTHON) -m unittest discover -s integration_tests -p 'test_*.py'
 
 # Code quality
 fmt:

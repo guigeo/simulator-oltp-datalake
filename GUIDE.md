@@ -289,6 +289,7 @@ make stream-test       # Executar 5 ciclos e encerrar
 make reset             # Drop + recreate + seed
 make counts            # Ver contagens
 make test              # Executar testes unitários
+make test-integration  # Testes opcionais com PostgreSQL
 make test-connection   # Testar conexão com PostgreSQL
 make cdc-up            # Subir Kafka, Connect e Kafka UI
 make cdc-topics        # Listar tópicos Kafka
