@@ -109,7 +109,21 @@ make test
 make test-integration  # Optional PostgreSQL integration tests
 ```
 
-### 6. Optional CDC Stack
+### 6. Operational Dashboard
+
+```bash
+make dashboard
+```
+
+Default URL:
+
+```text
+http://127.0.0.1:8501
+```
+
+The first dashboard version reads PostgreSQL directly and refreshes automatically.
+
+### 7. Optional CDC Stack
 
 ```bash
 # Start PostgreSQL + Kafka + Kafka Connect + Kafka UI
@@ -156,6 +170,8 @@ Docker Desktop does not expose port `8083` correctly on the host.
 | `make test` | Run unit tests with unittest |
 | `make test-integration` | Run optional PostgreSQL integration tests |
 | `make test-connection` | Validate PostgreSQL connection |
+| `make dashboard` | Start operational dashboard |
+| `make dashboard-test` | Validate dashboard imports |
 | `make cdc-up` | Start PostgreSQL, Kafka, Connect and Kafka UI |
 | `make cdc-down` | Stop CDC stack |
 | `make cdc-topics` | List Kafka topics |

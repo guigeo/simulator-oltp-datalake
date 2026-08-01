@@ -85,13 +85,18 @@ Proximos passos:
 
 ## Fase 7: Dashboard Operacional
 
-Status: pendente.
+Status: iniciada.
 
-Proximos passos:
+Concluido:
 
 - Criar dashboard local para acompanhamento hospitalar.
 - Comecar por consultas diretas no PostgreSQL.
 - Adicionar auto-refresh e indicadores operacionais.
+
+Proximos passos:
+
+- Empacotar dashboard em Docker.
+- Preparar configuracao para VPS.
 - Depois decidir se o dashboard tambem precisa ler eventos Kafka.
 
 ## Fase 8: Remocao Lake/S3/Databricks

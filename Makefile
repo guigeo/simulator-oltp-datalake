@@ -1,4 +1,4 @@
-.PHONY: install up down ps logs cdc-up cdc-down cdc-topics cdc-consume connector-create connector-recreate connector-status connector-delete connector-list docker-build docker-init docker-reset docker-stream docker-stream-test docker-test init seed stream stream-test counts reset test test-integration test-connection fmt lint clean help
+.PHONY: install up down ps logs dashboard dashboard-test cdc-up cdc-down cdc-topics cdc-consume connector-create connector-recreate connector-status connector-delete connector-list docker-build docker-init docker-reset docker-stream docker-stream-test docker-test init seed stream stream-test counts reset test test-integration test-connection fmt lint clean help
 
 PYTHON ?= python3
 VENV_PYTHON := .venv/bin/python
@@ -7,6 +7,8 @@ KAFKA_CONTAINER ?= alimentador_kafka
 KAFKA_BROKER ?= alimentador_kafka:29092
 TOPIC ?= oltp.public.pacientes
 MESSAGES ?= 1
+DASHBOARD_HOST ?= 127.0.0.1
+DASHBOARD_PORT ?= 8501
 
 # Default target
 help:
@@ -27,6 +29,10 @@ help:
 	@echo "  make test-connection  - Testa conexão com PostgreSQL"
 	@echo "  make test             - Executa testes unitários"
 	@echo "  make test-integration - Executa testes opcionais com PostgreSQL"
+	@echo ""
+	@echo "Dashboard:"
+	@echo "  make dashboard        - Inicia dashboard operacional"
+	@echo "  make dashboard-test   - Valida imports do dashboard"
 	@echo ""
 	@echo "CDC:"
 	@echo "  make cdc-up           - Sobe Kafka, Connect e Kafka UI"
@@ -75,6 +81,12 @@ ps:
 
 logs:
 	docker compose logs -f postgres
+
+dashboard:
+	$(VENV_PYTHON) -m streamlit run app/dashboard.py --server.address $(DASHBOARD_HOST) --server.port $(DASHBOARD_PORT)
+
+dashboard-test:
+	@$(VENV_PYTHON) -c "import app.dashboard_data; import app.dashboard"
 
 cdc-up:
 	docker compose --profile cdc up -d

@@ -18,6 +18,18 @@ make test-integration
 make stream-test
 ```
 
+## Dashboard
+
+```bash
+make dashboard
+```
+
+URL local:
+
+```text
+http://127.0.0.1:8501
+```
+
 ## Docker App
 
 ```bash
