@@ -3,6 +3,7 @@ services:
   postgres:
     image: debezium/postgres:16
     container_name: alimentador_postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app123
@@ -26,6 +27,7 @@ services:
   simulator:
     build:
       context: .
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,6 +51,7 @@ services:
     build:
       context: .
     container_name: hospital_dashboard
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
