@@ -30,6 +30,18 @@ logger = logging.getLogger(__name__)
 
 should_stop = False
 
+STREAM_EVENTS = [
+    "insert_paciente",
+    "insert_consulta",
+    "insert_exame",
+    "insert_internacao",
+    "update_paciente",
+    "update_consulta",
+    "update_exame",
+    "update_internacao",
+]
+STREAM_WEIGHTS = [5, 30, 15, 20, 8, 10, 7, 5]
+
 
 def handle_signal(signum, frame):
     """Handler para SIGINT/SIGTERM."""
@@ -285,6 +297,25 @@ def update_internacao(conn: psycopg2.extensions.connection) -> bool:
         return False
 
 
+def run_stream_event(
+    event: str,
+    conn: psycopg2.extensions.connection,
+    validators: Validators,
+) -> bool:
+    """Executa um evento de stream pelo nome."""
+    handlers = {
+        "insert_paciente": lambda: insert_paciente(conn, validators),
+        "insert_consulta": lambda: insert_consulta(conn, validators),
+        "insert_exame": lambda: insert_exame(conn, validators),
+        "insert_internacao": lambda: insert_internacao(conn, validators),
+        "update_paciente": lambda: update_paciente(conn, validators),
+        "update_consulta": lambda: update_consulta(conn),
+        "update_exame": lambda: update_exame(conn),
+        "update_internacao": lambda: update_internacao(conn),
+    }
+    return handlers[event]()
+
+
 def stream_loop(
     conn: psycopg2.extensions.connection,
     interval: int,
@@ -306,13 +337,7 @@ def stream_loop(
         "update_exame": 0,
         "update_internacao": 0,
     }
-    
-    weights = [5, 30, 15, 20, 8, 10, 7, 5]
-    events = [
-        "insert_paciente", "insert_consulta", "insert_exame", "insert_internacao",
-        "update_paciente", "update_consulta", "update_exame", "update_internacao",
-    ]
-    
+
     logger.info(f"Iniciando stream com intervalo {interval}s e jitter até {max_jitter_ms}ms")
     logger.info("Modelo realista: INSERT (70%) e UPDATE (30%)")
     if cycles:
@@ -324,25 +349,8 @@ def stream_loop(
             cycle += 1
             jitter = random.randint(0, max_jitter_ms) / 1000
             
-            event = random.choices(events, weights=weights)[0]
-            
-            success = False
-            if event == "insert_paciente":
-                success = insert_paciente(conn, validators)
-            elif event == "insert_consulta":
-                success = insert_consulta(conn, validators)
-            elif event == "insert_exame":
-                success = insert_exame(conn, validators)
-            elif event == "insert_internacao":
-                success = insert_internacao(conn, validators)
-            elif event == "update_paciente":
-                success = update_paciente(conn, validators)
-            elif event == "update_consulta":
-                success = update_consulta(conn)
-            elif event == "update_exame":
-                success = update_exame(conn)
-            elif event == "update_internacao":
-                success = update_internacao(conn)
+            event = random.choices(STREAM_EVENTS, weights=STREAM_WEIGHTS)[0]
+            success = run_stream_event(event, conn, validators)
             
             if success:
                 counters[event] += 1
