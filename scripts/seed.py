@@ -26,6 +26,60 @@ from scripts.validators import Validators
 
 logger = logging.getLogger(__name__)
 
+INSERT_MEDICOS_SQL = """
+INSERT INTO medicos (nome, crm, especialidade, telefone)
+VALUES %s
+"""
+
+INSERT_PACIENTES_SQL = """
+INSERT INTO pacientes
+(nome, nascimento, cpf, telefone, endereco, data_cadastro)
+VALUES %s
+"""
+
+INSERT_CONVENIOS_SQL = """
+INSERT INTO convenios (nome, cnpj, tipo, cobertura)
+VALUES %s
+"""
+
+INSERT_CONSULTAS_SQL = """
+INSERT INTO consultas
+(paciente_id, medico_id, data, motivo, status)
+VALUES %s
+"""
+
+INSERT_EXAMES_SQL = """
+INSERT INTO exames
+(paciente_id, tipo_exame, data, resultado)
+VALUES %s
+"""
+
+INSERT_INTERNACOES_SQL = """
+INSERT INTO internacoes
+(paciente_id, data_entrada, data_saida, motivo, quarto)
+VALUES %s
+"""
+
+
+def flush_insert_batch(
+    conn: psycopg2.extensions.connection,
+    sql: str,
+    batch: list[tuple],
+    label: str,
+    total_inserted: int,
+) -> int:
+    """Insere um batch, faz commit e retorna o total atualizado."""
+    if not batch:
+        return total_inserted
+
+    with conn.cursor() as cur:
+        execute_values(cur, sql, batch)
+    conn.commit()
+
+    total_inserted += len(batch)
+    logger.info(f"{label}: +{len(batch)} (total={total_inserted})")
+    return total_inserted
+
 
 def load_config() -> dict:
     """Carrega configurações do .env."""
@@ -68,34 +122,24 @@ def seed_medicos(
             )
             
             if len(batch) >= batch_size:
-                with conn.cursor() as cur:
-                    execute_values(
-                        cur,
-                        """
-                        INSERT INTO medicos (nome, crm, especialidade, telefone)
-                        VALUES %s
-                        """,
-                        batch,
-                    )
-                conn.commit()
-                total_inserted += len(batch)
-                logger.info(f"Médicos: +{len(batch)} (total={total_inserted})")
+                total_inserted = flush_insert_batch(
+                    conn,
+                    INSERT_MEDICOS_SQL,
+                    batch,
+                    "Médicos",
+                    total_inserted,
+                )
                 batch = []
         
         # Último batch
         if batch:
-            with conn.cursor() as cur:
-                execute_values(
-                    cur,
-                    """
-                    INSERT INTO medicos (nome, crm, especialidade, telefone)
-                    VALUES %s
-                    """,
-                    batch,
-                )
-            conn.commit()
-            total_inserted += len(batch)
-            logger.info(f"Médicos: +{len(batch)} (total={total_inserted})")
+            total_inserted = flush_insert_batch(
+                conn,
+                INSERT_MEDICOS_SQL,
+                batch,
+                "Médicos",
+                total_inserted,
+            )
     except psycopg2.Error as e:
         logger.error(f"Erro ao seed de médicos: {e}")
         conn.rollback()
@@ -129,38 +173,24 @@ def seed_pacientes(
             )
             
             if len(batch) >= batch_size:
-                with conn.cursor() as cur:
-                    execute_values(
-                        cur,
-                        """
-                        INSERT INTO pacientes
-                        (nome, nascimento, cpf, telefone, endereco, data_cadastro)
-                        VALUES %s
-                        """,
-                        batch,
-                    )
-                conn.commit()
-                total_inserted += len(batch)
-                logger.info(
-                    f"Pacientes: +{len(batch)} (total={total_inserted})"
+                total_inserted = flush_insert_batch(
+                    conn,
+                    INSERT_PACIENTES_SQL,
+                    batch,
+                    "Pacientes",
+                    total_inserted,
                 )
                 batch = []
         
         # Último batch
         if batch:
-            with conn.cursor() as cur:
-                execute_values(
-                    cur,
-                    """
-                    INSERT INTO pacientes
-                    (nome, nascimento, cpf, telefone, endereco, data_cadastro)
-                    VALUES %s
-                    """,
-                    batch,
-                )
-            conn.commit()
-            total_inserted += len(batch)
-            logger.info(f"Pacientes: +{len(batch)} (total={total_inserted})")
+            total_inserted = flush_insert_batch(
+                conn,
+                INSERT_PACIENTES_SQL,
+                batch,
+                "Pacientes",
+                total_inserted,
+            )
     except psycopg2.Error as e:
         logger.error(f"Erro ao seed de pacientes: {e}")
         conn.rollback()
@@ -192,34 +222,24 @@ def seed_convenios(
             )
             
             if len(batch) >= batch_size:
-                with conn.cursor() as cur:
-                    execute_values(
-                        cur,
-                        """
-                        INSERT INTO convenios (nome, cnpj, tipo, cobertura)
-                        VALUES %s
-                        """,
-                        batch,
-                    )
-                conn.commit()
-                total_inserted += len(batch)
-                logger.info(f"Convênios: +{len(batch)} (total={total_inserted})")
+                total_inserted = flush_insert_batch(
+                    conn,
+                    INSERT_CONVENIOS_SQL,
+                    batch,
+                    "Convênios",
+                    total_inserted,
+                )
                 batch = []
         
         # Último batch
         if batch:
-            with conn.cursor() as cur:
-                execute_values(
-                    cur,
-                    """
-                    INSERT INTO convenios (nome, cnpj, tipo, cobertura)
-                    VALUES %s
-                    """,
-                    batch,
-                )
-            conn.commit()
-            total_inserted += len(batch)
-            logger.info(f"Convênios: +{len(batch)} (total={total_inserted})")
+            total_inserted = flush_insert_batch(
+                conn,
+                INSERT_CONVENIOS_SQL,
+                batch,
+                "Convênios",
+                total_inserted,
+            )
     except psycopg2.Error as e:
         logger.error(f"Erro ao seed de convênios: {e}")
         conn.rollback()
@@ -335,39 +355,27 @@ def seed_consultas(
                         consulta["motivo"],
                         consulta["status"],
                     )
-                )
+            )
             
             if len(batch) >= batch_size:
-                with conn.cursor() as cur:
-                    execute_values(
-                        cur,
-                        """
-                        INSERT INTO consultas
-                        (paciente_id, medico_id, data, motivo, status)
-                        VALUES %s
-                        """,
-                        batch,
-                    )
-                conn.commit()
-                total_inserted += len(batch)
-                logger.info(f"Consultas: +{len(batch)} (total={total_inserted})")
+                total_inserted = flush_insert_batch(
+                    conn,
+                    INSERT_CONSULTAS_SQL,
+                    batch,
+                    "Consultas",
+                    total_inserted,
+                )
                 batch = []
         
         # Último batch
         if batch:
-            with conn.cursor() as cur:
-                execute_values(
-                    cur,
-                    """
-                    INSERT INTO consultas
-                    (paciente_id, medico_id, data, motivo, status)
-                    VALUES %s
-                    """,
-                    batch,
-                )
-            conn.commit()
-            total_inserted += len(batch)
-            logger.info(f"Consultas: +{len(batch)} (total={total_inserted})")
+            total_inserted = flush_insert_batch(
+                conn,
+                INSERT_CONSULTAS_SQL,
+                batch,
+                "Consultas",
+                total_inserted,
+            )
     except psycopg2.Error as e:
         logger.error(f"Erro ao seed de consultas: {e}")
         conn.rollback()
@@ -400,39 +408,27 @@ def seed_exames(
                         exame["data"],
                         exame["resultado"],
                     )
-                )
+            )
             
             if len(batch) >= batch_size:
-                with conn.cursor() as cur:
-                    execute_values(
-                        cur,
-                        """
-                        INSERT INTO exames
-                        (paciente_id, tipo_exame, data, resultado)
-                        VALUES %s
-                        """,
-                        batch,
-                    )
-                conn.commit()
-                total_inserted += len(batch)
-                logger.info(f"Exames: +{len(batch)} (total={total_inserted})")
+                total_inserted = flush_insert_batch(
+                    conn,
+                    INSERT_EXAMES_SQL,
+                    batch,
+                    "Exames",
+                    total_inserted,
+                )
                 batch = []
         
         # Último batch
         if batch:
-            with conn.cursor() as cur:
-                execute_values(
-                    cur,
-                    """
-                    INSERT INTO exames
-                    (paciente_id, tipo_exame, data, resultado)
-                    VALUES %s
-                    """,
-                    batch,
-                )
-            conn.commit()
-            total_inserted += len(batch)
-            logger.info(f"Exames: +{len(batch)} (total={total_inserted})")
+            total_inserted = flush_insert_batch(
+                conn,
+                INSERT_EXAMES_SQL,
+                batch,
+                "Exames",
+                total_inserted,
+            )
     except psycopg2.Error as e:
         logger.error(f"Erro ao seed de exames: {e}")
         conn.rollback()
@@ -466,42 +462,26 @@ def seed_internacoes(
                         internacao["motivo"],
                         internacao["quarto"],
                     )
-                )
+            )
             
             if len(batch) >= batch_size:
-                with conn.cursor() as cur:
-                    execute_values(
-                        cur,
-                        """
-                        INSERT INTO internacoes
-                        (paciente_id, data_entrada, data_saida, motivo, quarto)
-                        VALUES %s
-                        """,
-                        batch,
-                    )
-                conn.commit()
-                total_inserted += len(batch)
-                logger.info(
-                    f"Internações: +{len(batch)} (total={total_inserted})"
+                total_inserted = flush_insert_batch(
+                    conn,
+                    INSERT_INTERNACOES_SQL,
+                    batch,
+                    "Internações",
+                    total_inserted,
                 )
                 batch = []
         
         # Último batch
         if batch:
-            with conn.cursor() as cur:
-                execute_values(
-                    cur,
-                    """
-                    INSERT INTO internacoes
-                    (paciente_id, data_entrada, data_saida, motivo, quarto)
-                    VALUES %s
-                    """,
-                    batch,
-                )
-            conn.commit()
-            total_inserted += len(batch)
-            logger.info(
-                f"Internações: +{len(batch)} (total={total_inserted})"
+            total_inserted = flush_insert_batch(
+                conn,
+                INSERT_INTERNACOES_SQL,
+                batch,
+                "Internações",
+                total_inserted,
             )
     except psycopg2.Error as e:
         logger.error(f"Erro ao seed de internações: {e}")
