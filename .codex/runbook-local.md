@@ -38,6 +38,12 @@ make docker-dashboard
 make docker-dashboard-test
 ```
 
+Porta alternativa:
+
+```bash
+make docker-dashboard DASHBOARD_PORT=8502
+```
+
 ## Docker App
 
 ```bash

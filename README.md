@@ -133,6 +133,12 @@ make docker-dashboard
 make docker-dashboard-test
 ```
 
+Use another host port when `8501` is already in use:
+
+```bash
+make docker-dashboard DASHBOARD_PORT=8502
+```
+
 ### 7. Optional CDC Stack
 
 ```bash

@@ -94,7 +94,7 @@ docker-dashboard-build:
 	docker compose build dashboard
 
 docker-dashboard:
-	docker compose --profile dashboard up -d --remove-orphans dashboard
+	DASHBOARD_PORT=$(DASHBOARD_PORT) docker compose --profile dashboard up -d --remove-orphans dashboard
 
 docker-dashboard-test:
 	docker compose run --rm dashboard python -c "import app.dashboard_data; import app.dashboard"

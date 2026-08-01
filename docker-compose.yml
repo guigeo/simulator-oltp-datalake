@@ -59,7 +59,7 @@ services:
       PG_PASSWORD: app123
       PG_DATABASE: teste_pacientes
     ports:
-      - "8501:8501"
+      - "${DASHBOARD_PORT:-8501}:8501"
     networks:
       - alimentador_net
     profiles:
