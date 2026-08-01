@@ -122,6 +122,8 @@ http://127.0.0.1:8501
 ```
 
 The first dashboard version reads PostgreSQL directly and refreshes automatically.
+It includes operational tabs for overview, appointments, exams, admissions and
+recent activity, plus simple alerts for accumulated demand and long admissions.
 
 Docker workflow:
 

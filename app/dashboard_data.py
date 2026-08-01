@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 import psycopg2
 
@@ -168,6 +168,177 @@ def get_internacoes_ativas(
     )
 
 
+def get_pacientes_sem_convenio(
+    conn: psycopg2.extensions.connection,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Pacientes sem convenio associado."""
+    return fetch_rows(
+        conn,
+        """
+        SELECT
+            p.id,
+            p.nome,
+            p.cpf,
+            p.telefone,
+            p.created_at
+        FROM pacientes p
+        LEFT JOIN pacientes_convenios pc ON pc.paciente_id = p.id
+        WHERE pc.id IS NULL
+        ORDER BY p.created_at DESC
+        LIMIT %s
+        """,
+        (limit,),
+    )
+
+
+def get_internacoes_longas(
+    conn: psycopg2.extensions.connection,
+    min_days: int = 7,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Internacoes ativas acima de uma quantidade de dias."""
+    return fetch_rows(
+        conn,
+        """
+        SELECT
+            i.id,
+            p.nome AS paciente,
+            i.data_entrada,
+            DATE_PART('day', now() - i.data_entrada)::int AS dias_internado,
+            i.motivo,
+            i.quarto
+        FROM internacoes i
+        JOIN pacientes p ON p.id = i.paciente_id
+        WHERE i.data_saida IS NULL
+          AND i.data_entrada <= now() - (%s || ' days')::interval
+        ORDER BY dias_internado DESC, i.data_entrada ASC
+        LIMIT %s
+        """,
+        (min_days, limit),
+    )
+
+
+def get_ocupacao_por_quarto(
+    conn: psycopg2.extensions.connection,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Ocupacao atual agrupada por quarto."""
+    return fetch_rows(
+        conn,
+        """
+        SELECT
+            COALESCE(quarto, 'sem_quarto') AS quarto,
+            COUNT(*) AS internacoes_ativas
+        FROM internacoes
+        WHERE data_saida IS NULL
+        GROUP BY COALESCE(quarto, 'sem_quarto')
+        ORDER BY internacoes_ativas DESC, quarto
+        LIMIT %s
+        """,
+        (limit,),
+    )
+
+
+def get_exames_pendentes_recentes(
+    conn: psycopg2.extensions.connection,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Exames pendentes mais recentes."""
+    return fetch_rows(
+        conn,
+        """
+        SELECT
+            e.id,
+            p.nome AS paciente,
+            e.tipo_exame,
+            e.data,
+            e.created_at
+        FROM exames e
+        JOIN pacientes p ON p.id = e.paciente_id
+        WHERE e.resultado IS NULL
+        ORDER BY e.data DESC
+        LIMIT %s
+        """,
+        (limit,),
+    )
+
+
+def get_consultas_agendadas_proximas(
+    conn: psycopg2.extensions.connection,
+    days: int = 7,
+    limit: int = 20,
+) -> list[dict[str, Any]]:
+    """Consultas agendadas dentro da janela informada."""
+    return fetch_rows(
+        conn,
+        """
+        SELECT
+            c.id,
+            c.data,
+            p.nome AS paciente,
+            m.nome AS medico,
+            m.especialidade,
+            c.motivo
+        FROM consultas c
+        JOIN pacientes p ON p.id = c.paciente_id
+        JOIN medicos m ON m.id = c.medico_id
+        WHERE c.status = 'agendada'
+          AND c.data BETWEEN now() AND now() + (%s || ' days')::interval
+        ORDER BY c.data ASC
+        LIMIT %s
+        """,
+        (days, limit),
+    )
+
+
+def get_operational_alerts(
+    snapshot: dict[str, Any],
+    thresholds: Optional[dict[str, int]] = None,
+) -> list[dict[str, Any]]:
+    """Calcula alertas operacionais simples a partir do snapshot."""
+    thresholds = thresholds or {}
+    kpis = snapshot.get("kpis", {})
+    rules = [
+        {
+            "codigo": "exames_pendentes",
+            "titulo": "Exames pendentes acima do limite",
+            "valor": kpis.get("exames_pendentes", 0),
+            "limite": thresholds.get("exames_pendentes", 50),
+            "severidade": "atenção",
+        },
+        {
+            "codigo": "consultas_agendadas",
+            "titulo": "Consultas agendadas acumuladas",
+            "valor": kpis.get("consultas_agendadas", 0),
+            "limite": thresholds.get("consultas_agendadas", 500),
+            "severidade": "atenção",
+        },
+        {
+            "codigo": "internacoes_ativas",
+            "titulo": "Internações ativas acima do limite",
+            "valor": kpis.get("internacoes_ativas", 0),
+            "limite": thresholds.get("internacoes_ativas", 100),
+            "severidade": "crítico",
+        },
+        {
+            "codigo": "pacientes_sem_convenio",
+            "titulo": "Pacientes sem convênio",
+            "valor": len(snapshot.get("pacientes_sem_convenio", [])),
+            "limite": thresholds.get("pacientes_sem_convenio", 0),
+            "severidade": "atenção",
+        },
+        {
+            "codigo": "internacoes_longas",
+            "titulo": "Internações longas em aberto",
+            "valor": len(snapshot.get("internacoes_longas", [])),
+            "limite": thresholds.get("internacoes_longas", 0),
+            "severidade": "crítico",
+        },
+    ]
+    return [rule for rule in rules if rule["valor"] > rule["limite"]]
+
+
 def get_atividade_recente(
     conn: psycopg2.extensions.connection,
     minutes: int = 15,
@@ -217,5 +388,10 @@ def get_dashboard_snapshot(
         "internacoes_por_status": get_internacoes_por_status(conn),
         "ultimas_consultas": get_ultimas_consultas(conn),
         "internacoes_ativas": get_internacoes_ativas(conn),
+        "internacoes_longas": get_internacoes_longas(conn),
+        "ocupacao_por_quarto": get_ocupacao_por_quarto(conn),
+        "exames_pendentes_recentes": get_exames_pendentes_recentes(conn),
+        "consultas_agendadas_proximas": get_consultas_agendadas_proximas(conn),
+        "pacientes_sem_convenio": get_pacientes_sem_convenio(conn),
         "atividade_recente": get_atividade_recente(conn, recent_minutes),
     }
